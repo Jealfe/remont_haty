@@ -605,12 +605,58 @@ function withBedroomBoxPrice(data){
   });
   return {...data,catalogRevision:17,items};
 }
+// Ревизия 18. Согласованный план розеток кухни-гостиной (см. plan.html).
+// 14 силовых механизмов + 1 RJ45 + 1 двухклавишный выключатель = 16 подрозетников.
+// Встроенные две розетки пенала, прямые подключения плиты/духовки и вывод
+// кондиционера НЕ входят в эти 16 механизмов. Цены пока предварительные.
+const KITCHEN_ELECTRICAL_PLAN=[
+  {
+    id:'kitchen-20261013-sockets',name:'Розетки 230 В — кухня-гостиная',
+    spec:'14 механизмов: холодильник 1, посудомойка 1, измельчитель пищевых отходов 1, фартук рабочей зоны 2, вытяжка 1, за высоким пеналом (микроволновка и резерв) 2, за телевизором 2, у обеденного стола 2, возле дивана 2. Двойная встроенная розетка в пенале для чайника и кофемашины в это количество не входит, но к ней нужно подвести питание. Цена 550 ₽/шт. предварительная, модель и серия не выбраны.',
+    quantity:14,unit:'шт.',price:550
+  },
+  {
+    id:'kitchen-20261013-rj45',name:'Интернет-розетка RJ45 — кухня-гостиная',
+    spec:'1 механизм за телевизором. Рабочего компьютера в комнате не планируется. Ориентировочная цена 550 ₽/шт. принята по аналогии с обычными розетками, серию и категорию механизма уточним.',
+    quantity:1,unit:'шт.',price:550
+  },
+  {
+    id:'kitchen-20261013-switch',name:'Двухклавишный выключатель — кухня-гостиная',
+    spec:'1 механизм у входа. Клавиша 1 — трек над кухней + люстра над обеденным столом; клавиша 2 — трек над диваном, ориентировочно на 4 светильника. Стоимость 550 ₽ предварительная.',
+    quantity:1,unit:'шт.',price:550
+  },
+  {
+    id:'kitchen-20261013-underboxes',name:'Подрозетники — кухня-гостиная',
+    spec:'16 шт.: 14 механизмов розеток 230 В, 1 RJ45, 1 двухклавишный выключатель. Диаметр ориентировочно 68 мм, глубину 45/60 мм уточним по стенам. Цена 20 ₽/шт. предварительная. Прямые подключения варочной панели и духового шкафа, вывод кондиционера и питание встроенных мебельных розеток НЕ являются дополнительными подрозетниками в этой строке.',
+    quantity:16,unit:'шт.',price:20
+  }
+];
+function withKitchenElectricalPlan(data){
+  if(data.catalogRevision>=18)return data;
+  const items=[...data.items];
+  const existingNames=[
+    /(?:розетк.*230|силов.*розетк|электрическ.*розетк)/i,
+    /(?:интернет.розетк|розетк.*rj.?45|rj.?45.*розетк)/i,
+    /(?:двухклавиш.*выключ|выключ.*двухклавиш)/i,
+    /подрозетник/i
+  ];
+  KITCHEN_ELECTRICAL_PLAN.forEach((entry,index)=>{
+    // Сохраняем самостоятельно внесённые пользователем аналогичные позиции.
+    if(items.some(i=>i.id===entry.id||
+      (i.room==='Кухня'&&i.category==='Электрика'&&existingNames[index].test(i.name))))return;
+    items.push({...entry,category:'Электрика',room:'Кухня',stage:'Электрика',
+      kind:'material',priceApprox:true,quantityApprox:false,
+      status:'Запланировано',shop:'',url:''});
+  });
+  return {...data,catalogRevision:18,items};
+}
+
 function initial(){
-  return withBedroomBoxPrice(withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))))))))));
+  return withKitchenElectricalPlan(withBedroomBoxPrice(withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())))))))))));
 }
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return withBedroomBoxPrice(withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base))))))));
+  return withKitchenElectricalPlan(withBedroomBoxPrice(withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base)))))))));
 }
 
 function amount(i){
