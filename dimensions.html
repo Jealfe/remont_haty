@@ -52,8 +52,16 @@
   .openings-panel{padding:10px 12px}
 }
 @media print{.back-link{display:none}.measurement-totals{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.flooring-totals{grid-template-columns:repeat(2,minmax(0,1fr))}
+.flooring-totals small{color:var(--muted);font-size:11px}
+.flooring-totals span{font-size:11px}
+.flooring-table{min-width:740px}
+.flooring-table td:first-child{font-weight:600}
+.flooring-table td:not(:first-child){font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:700px){.flooring-totals{grid-template-columns:repeat(2,minmax(0,1fr))}.flooring-totals strong{font-size:17px}.flooring-table{min-width:740px}}
 </style>
-<script defer src="dimensions.js?v=2"></script>
+<script defer src="dimensions.js?v=3"></script>
 </head>
 <body>
 <header class="site-header">
@@ -78,6 +86,24 @@
       </table>
     </div>
     <p class="dimension-note">Периметр и площадь стен — без вычета окон, дверей и ниш. Для Г-образного коридора площадь посчитана по твоей формуле, но периметр стен оставлен на уточнение по плану. *74,08 м² — площадь без санузлов и кладовой, до запаса и подрезки линолеума. Если кладовую тоже покрывать линолеумом, получается 78,10 м².</p>
+  </section>
+
+  <section class="measurements-page-section" aria-label="Предварительная стоимость линолеума">
+    <h2>Линолеум — сравнение раскроя</h2>
+    <div class="measurement-totals flooring-totals">
+      <div><span>«Дуб Роберта» · 3,5 м · 875 ₽/м²</span><strong id="floor-roberta">—</strong><small>К покупке: <span id="floor-roberta-buy">—</span></small></div>
+      <div><span>«Касли» · 4 м · 915 ₽/м²</span><strong id="floor-kasli">—</strong><small>К покупке: <span id="floor-kasli-buy">—</span></small></div>
+    </div>
+    <p class="dimension-note"><strong>Предварительная экономия с «Дуб Роберта»: <span id="floor-savings">—</span>.</strong> Это варианты для сравнения, а не две позиции для покупки. В общую смету второй вариант не добавлен.</p>
+    <div class="table-wrap">
+      <table class="flooring-table">
+        <thead><tr><th>Помещение</th><th>Длина отреза</th><th>3,5 м · площадь</th><th>3,5 м · сумма</th><th>4 м · площадь</th><th>4 м · сумма</th></tr></thead>
+        <tbody id="flooring-rows"></tbody>
+      </table>
+    </div>
+    <p id="floor-fit-note" class="dimension-note"></p>
+    <p class="dimension-note">Для каждого отреза предусмотрено +10 см по длине и проверено, что ширины рулона хватает с +10 см к поперечному размеру. Ширина детской 2 — 3,35 м: при рулоне 3,5 м запас только 15 см на обе стороны. Учесть отклонения стен, направления древесного рисунка, швы в дверных проёмах и доставку длинных отрезов. Это оценка до обмеров, не заказной лист.</p>
+    <p class="dimension-note">По характеристикам: у обоих покрытий класс 32 и защитный слой 0,4 мм. Общая толщина «Дуб Роберта» — 3,5 мм, у «Касли» — 4,6 мм. Состав основы и остаточную деформацию необходимо сравнить отдельно; большая общая толщина не означает автоматически большую долговечность.</p>
   </section>
   <section class="measurements-page-section">
     <details class="openings-panel">
