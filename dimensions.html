@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Размеры помещений, окна и двери квартиры Ремонт Хаты для расчётов материалов.">
+<title>Размеры квартиры — Ремонт Хаты</title>
+<link rel="stylesheet" href="styles.css?v=6">
+<style>
+.dimensions-page{max-width:1050px}
+.dimensions-header{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin:7px 0 14px}
+.dimensions-header h1{font-size:23px;margin:0 0 5px}
+.dimensions-header p{margin:0;color:var(--muted);font-size:12px}
+.back-link{padding:7px 11px;border:1px solid var(--line);border-radius:7px;text-decoration:none;white-space:nowrap;color:var(--ink)}
+.measurement-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0}
+.measurement-totals>div{background:var(--wash);border:1px solid var(--line);border-radius:9px;padding:12px 14px;display:grid;gap:5px}
+.measurement-totals span{color:var(--muted);font-size:12px}
+.measurement-totals strong{font-size:22px}
+.measurements-page-section{margin-top:22px}
+.measurements-page-section h2{font-size:16px;margin:0 0 9px}
+.dimensions-table{min-width:720px}
+.dimensions-table td:first-child{font-weight:650}
+.dimensions-table th{white-space:nowrap}
+.dimensions-table .number-cell{white-space:nowrap;font-variant-numeric:tabular-nums}
+.dimension-note{font-size:12px;color:var(--muted);line-height:1.5;margin:11px 0}
+.dimensions-warning{font-size:12px;line-height:1.55;padding:10px 12px;background:#fff9ec;border:1px solid #f0dfbd;border-radius:8px;margin-top:15px}
+.openings-panel{border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+.openings-panel summary{font-size:14px;font-weight:650;cursor:pointer}
+.openings-panel ol{margin:12px 0 0;padding-left:20px;display:grid;gap:8px}
+.openings-panel li{line-height:1.55}
+.wallpaper-table{min-width:550px}
+.wallpaper-table td{font-variant-numeric:tabular-nums}
+@media(max-width:700px){
+  .dimensions-page{padding:15px 12px 34px}
+  .dimensions-header h1{font-size:20px}
+  .dimensions-header{align-items:flex-start}
+  .measurement-totals{gap:6px}
+  .measurement-totals>div{padding:10px 9px}
+  .measurement-totals span{font-size:10px}
+  .measurement-totals strong{font-size:17px}
+  .dimensions-table{min-width:0;display:block}
+  .dimensions-table thead{display:none}
+  .dimensions-table tbody{display:block}
+  .dimensions-table tr{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;padding:9px 11px;border-top:1px solid var(--line)}
+  .dimensions-table tr:first-child{border-top:0}
+  .dimensions-table td{border:0;padding:0;font-size:12px;white-space:normal}
+  .dimensions-table td:first-child{grid-column:1/-1;font-size:13px}
+  .dimensions-table td:nth-child(2){grid-column:1/-1;color:var(--muted);font-size:11px;margin-bottom:3px}
+  .dimensions-table td::before{content:attr(data-label) ' · ';color:var(--muted);font-size:11px}
+  .dimensions-table td:nth-child(-n+2)::before{display:none}
+  .wallpaper-table{min-width:540px}
+  .openings-panel{padding:10px 12px}
+}
+@media print{.back-link{display:none}.measurement-totals{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+<script defer src="dimensions.js?v=1"></script>
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="./">Ремонт Хаты</a>
+  <a class="back-link" href="./">← К смете</a>
+</header>
+<main class="dimensions-page">
+  <div class="dimensions-header">
+    <div><h1>Размеры квартиры</h1><p>Предварительно до получения ключей · записано 13.10.2026 · высота стен для расчётов <strong id="height">2,70 м</strong></p></div>
+  </div>
+  <div class="measurement-totals">
+    <div><span>Площадь всех помещений</span><strong id="total-area">—</strong></div>
+    <div><span>Без двух санузлов</span><strong id="dry-area">—</strong></div>
+    <div><span>Полы: комнаты + кухня + коридор*</span><strong id="linoleum-area">—</strong></div>
+  </div>
+  <section class="measurements-page-section" aria-label="Площади помещений">
+    <h2>Комнаты и площади</h2>
+    <div class="table-wrap">
+      <table class="dimensions-table">
+        <thead><tr><th>Помещение</th><th>Размеры, мм</th><th>Пол, м²</th><th>Периметр, м</th><th>Стены при 2,7 м, м²</th></tr></thead>
+        <tbody id="dimension-rows"></tbody>
+      </table>
+    </div>
+    <p class="dimension-note">Периметр и площадь стен — без вычета окон, дверей и ниш. Для Г-образного коридора площадь посчитана по твоей формуле, но периметр стен оставлен на уточнение по плану. *74,08 м² — площадь без санузлов и кладовой, до запаса и подрезки линолеума. Если кладовую тоже покрывать линолеумом, получается 78,10 м².</p>
+  </section>
+  <section class="measurements-page-section">
+    <details class="openings-panel">
+      <summary>Окна, двери и примечания по помещениям</summary>
+      <ol id="opening-list"></ol>
+    </details>
+  </section>
+  <section class="measurements-page-section">
+    <h2>Предварительный ориентир по обоям</h2>
+    <div class="table-wrap">
+      <table class="wallpaper-table">
+        <thead><tr><th>Помещение</th><th>Периметр</th><th>Полосы</th><th>Рулоны</th></tr></thead>
+        <tbody id="wallpaper-rows"></tbody>
+      </table>
+    </div>
+    <p id="wallpaper-rule" class="dimension-note"></p>
+    <p class="dimension-note">Это расчёт полного периметра по стандартному рулону, <strong>не готовый заказ</strong>. Для кухни и спален часть стен занята проёмами, а в спальне два сочетающихся артикула. Количество каждого артикула определим после уточнения раскладки. Коридор пока не посчитан из-за неизвестного контура стен и расположения дверей.</p>
+  </section>
+  <div class="dimensions-warning">
+    <strong>Нужно уточнить нумерацию санузлов.</strong>
+    Сейчас записано: санузел 1 — 5,02 м², санузел 2 — 6,76 м². Раньше основной санузел с ванной обсуждали как помещение около 6,5 м², а малый с душевой как второй. Размеры сохранены ровно в твоей нумерации; сантехнику между санузлами пока не переносим.
+  </div>
+</main>
+<noscript>Для расчёта площадей включите JavaScript.</noscript>
+</body>
+</html>
