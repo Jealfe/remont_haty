@@ -373,8 +373,20 @@ function includeDisc(data){
   return {...data,catalogRevision:9,
     items:existing?data.items:[...data.items,{...DISC_ITEM}]};
 }
-function initial(){return includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())));}
-function mergeCatalog(data){return includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));}
+// Ревизия 10: откатить преждевременное добавление пустой строки диска.
+// Два диска уже видны на скриншоте пользователя, но пока не идентифицированы.
+function removePrematureDisc(data){
+  if(data.catalogRevision>=10)return data;
+  const unchanged=i=>i.id===DISC_ITEM.id &&
+    ['name','spec','quantity','unit','price','category','room','kind','url','priceApprox','quantityApprox','status']
+      .every(k=>i[k]===DISC_ITEM[k]);
+  return {...data,catalogRevision:10,items:data.items.filter(i=>!unchanged(i))};
+}
+function initial(){return removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())));}
+function mergeCatalog(data){
+  const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
+  return removePrematureDisc(base);
+}
 
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
