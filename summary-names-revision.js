@@ -49,4 +49,5 @@ headerRow=function(label,items,expanded,onclick,kind){
  return row;
 };
 if(state.catalogRevision<29)commit(upgrade(state));
+else render();
 })();
