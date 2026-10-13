@@ -180,70 +180,169 @@ function commit(next){
     render();return true;
   }catch(e){notice(e.message,true);return false;}
 }
-function materials(){return state.items.filter(i=>i.kind==='material'&&!NON_MATERIALS.has(i.name));}
-function renderRooms(){
-  const nav=$('#rooms');nav.replaceChildren();
-  const all=materials();
-  for(const room of ['',...ROOMS]){
-    const count=room?all.filter(i=>i.room===room).length:all.length;
-    const label=(room?ROOM_PRESETS[room]||room:'Вся квартира')+' · '+count;
-    const b=elem('button',label,'room-tab'+(room===activeRoom?' active':''));
-    b.type='button';b.setAttribute('aria-pressed',String(room===activeRoom));
-    b.onclick=()=>{activeRoom=room;render()};
-    nav.append(b);
+
+function materials(){
+  return state.items.filter(i=>i.kind==='material'&&!NON_MATERIALS.has(i.name));
+}
+const WIRES_FILTER='@wires';
+const isWire=i=>/(кабел|провод|ввг|utp|ftp)/i.test(i.name);
+const sectionName=i=>isWire(i)?'Кабели и провода':i.category;
+const sectionOrder=['Кабели и провода',...CATEGORIES];
+const expandedSummary=new Set(['Кабели и провода']);
+const expandedRooms=new Set();
+const expandedBundles=new Set();
+let viewMode='summary';
+let materialFilter='';
+function nameOfRoom(room){return ROOM_PRESETS[room]||room;}
+function getFiltered(){
+  const query=$('#search').value.trim().toLocaleLowerCase('ru');
+  return materials().filter(i=>
+    (!materialFilter||(materialFilter===WIRES_FILTER?isWire(i):i.category===materialFilter))
+    &&(!query||[i.name,i.spec,i.category,i.room,nameOfRoom(i.room)].join(' ').toLocaleLowerCase('ru').includes(query))
+  );
+}
+function formatQuantity(item){
+  return item.quantity===null?'—':(item.quantityApprox?'≈ ':'')+number.format(item.quantity)+' '+item.unit;
+}
+function formatPrice(item){
+  return item.price===null?'—':(item.priceApprox?'≈ ':'')+money.format(item.price);
+}
+function formatAmount(item){
+  const a=amount(item);
+  return a===null?'—':((item.quantityApprox||item.priceApprox)?'≈ ':'')+money.format(a);
+}
+function aggregate(items){
+  const known=items.filter(i=>i.quantity!==null);
+  const qty=known.reduce((total,i)=>total+i.quantity,0);
+  const unknownQty=known.length!==items.length;
+  const quantity=(known.length?number.format(Math.round(qty*1000)/1000)+' '+items[0].unit:'—')+(unknownQty&&known.length?' + ?':'');
+  const knownPrices=items.filter(i=>i.price!==null).map(i=>i.price);
+  const price=knownPrices.length===items.length&&knownPrices.every(v=>v===knownPrices[0])
+    ?(items.some(i=>i.priceApprox)?'≈ ':'')+money.format(knownPrices[0])
+    :(knownPrices.length?'разная / ?':'—');
+  const sumKnown=items.filter(i=>amount(i)!==null);
+  const incomplete=sumKnown.length!==items.length;
+  const total=sumKnown.length?((items.some(i=>i.priceApprox||i.quantityApprox)?'≈ ':'')+money.format(sum(items))+(incomplete?' + ?':'')):'—';
+  return {quantity,price,total,incomplete,qty,knownQty:known.length};
+}
+function headerRow(label,items,expanded,onclick,kind){
+  const tr=elem('tr',undefined,'group-row '+kind);
+  const td=elem('td');td.colSpan=4;
+  const button=elem('button',undefined,'group-button');
+  button.type='button';button.setAttribute('aria-expanded',String(expanded));
+  button.setAttribute('aria-label',(expanded?'Свернуть ':'Развернуть ')+label);
+  const left=elem('span',undefined,'group-label');
+  left.append(elem('span',expanded?'▾':'▸','chevron'),elem('strong',label),elem('small',items.length+' поз.'));
+  const total=elem('span',money.format(sum(items)),'group-total');
+  button.append(left,total);button.onclick=onclick;
+  td.append(button);tr.append(td);return tr;
+}
+function materialRow(item,{child=false,subtitle=''}={}){
+  const tr=elem('tr',undefined,'item-row'+(child?' nested-row':''));
+  const title=elem('td');
+  const b=elem('button',item.name,'item-name');
+  b.type='button';b.onclick=()=>openEditor(item);
+  b.setAttribute('aria-label','Изменить '+item.name);
+  title.append(b);
+  if(subtitle)title.append(elem('div',subtitle,'item-subtitle'));
+  tr.append(title);
+  for(const [label,value] of [['Количество',formatQuantity(item)],['Цена',formatPrice(item)],['Сумма',formatAmount(item)]]){
+    const td=elem('td',value,'money');td.dataset.label=label;tr.append(td);
+  }
+  tr.onclick=e=>{if(!e.target.closest('button'))openEditor(item);};
+  return tr;
+}
+function bundleKey(i){return [i.category,i.name.trim().toLocaleLowerCase('ru'),i.unit.trim().toLocaleLowerCase('ru')].join('§');}
+function groupedMaterials(items){
+  const groups=new Map();
+  for(const i of items){const key=bundleKey(i);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(i);}
+  return [...groups.values()].sort((a,b)=>a[0].name.localeCompare(b[0].name,'ru'));
+}
+function bundleRow(items){
+  if(items.length===1)return [materialRow(items[0])];
+  const key=bundleKey(items[0]),expanded=expandedBundles.has(key),a=aggregate(items);
+  const tr=elem('tr',undefined,'item-row aggregate-row');
+  const td=elem('td'),b=elem('button',undefined,'item-name aggregate-button');
+  b.type='button';b.setAttribute('aria-expanded',String(expanded));
+  b.append(elem('span',expanded?'▾':'▸','inline-chevron'),elem('span',items[0].name));
+  td.append(b);td.append(elem('div',items.length+' помещений / позиций · нажми для разбивки','item-subtitle'));
+  tr.append(td);
+  for(const [label,value] of [['Количество',a.quantity],['Цена',a.price],['Сумма',a.total]]){
+    const cell=elem('td',value,'money');cell.dataset.label=label;tr.append(cell);
+  }
+  const toggle=()=>{if(expanded)expandedBundles.delete(key);else expandedBundles.add(key);render();};
+  b.onclick=toggle;tr.onclick=e=>{if(!e.target.closest('button'))toggle();};
+  const rows=[tr];
+  if(expanded){
+    for(const item of items)rows.push(materialRow(item,{child:true,subtitle:nameOfRoom(item.room)}));
+  }
+  return rows;
+}
+function forceExpand(){return Boolean(materialFilter||$('#search').value.trim());}
+function renderSummary(items){
+  const bySection=new Map();
+  for(const item of items){
+    const section=sectionName(item);
+    if(!bySection.has(section))bySection.set(section,[]);
+    bySection.get(section).push(item);
+  }
+  for(const section of sectionOrder){
+    const entries=bySection.get(section);
+    if(!entries?.length)continue;
+    const expanded=forceExpand()||expandedSummary.has(section);
+    const toggle=()=>{if(expandedSummary.has(section))expandedSummary.delete(section);else expandedSummary.add(section);render();};
+    $('#rows').append(headerRow(section,entries,expanded,toggle,'summary-group'));
+    if(expanded){
+      for(const bundle of groupedMaterials(entries)){
+        for(const row of bundleRow(bundle))$('#rows').append(row);
+      }
+    }
+  }
+}
+function renderRoomList(items){
+  for(const room of ROOMS){
+    const entries=items.filter(i=>i.room===room);
+    if(!entries.length)continue;
+    const expanded=forceExpand()||expandedRooms.has(room);
+    const toggle=()=>{if(expandedRooms.has(room))expandedRooms.delete(room);else expandedRooms.add(room);activeRoom=room;render();};
+    $('#rows').append(headerRow(nameOfRoom(room),entries,expanded,toggle,'room-group'));
+    if(expanded){
+      const sorted=[...entries].sort((a,b)=>CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||a.name.localeCompare(b.name,'ru'));
+      let previous=null;
+      for(const item of sorted){
+        if(previous!==item.category){
+          previous=item.category;
+          const tr=elem('tr',undefined,'subsection-row');
+          const td=elem('td',item.category);td.colSpan=4;tr.append(td);$('#rows').append(tr);
+        }
+        $('#rows').append(materialRow(item));
+      }
+    }
   }
 }
 function render(){
   const all=materials();
+  const filtered=getFiltered();
   $('#total').textContent=money.format(sum(all));
-  const current=activeRoom?all.filter(i=>i.room===activeRoom):all;
-  $('#section-total').textContent=(activeRoom?(ROOM_PRESETS[activeRoom]||activeRoom):'Вся квартира')+': '+money.format(sum(current));
-  $('#unknown').textContent=all.filter(i=>amount(i)===null).length+' позиций без полной суммы';
-  const query=$('#search').value.trim().toLocaleLowerCase('ru');
-  const filtered=all.filter(i=>(!activeRoom||i.room===activeRoom)&&(!category||i.category===category)&&[i.name,i.spec,i.category,i.room].join(' ').toLocaleLowerCase('ru').includes(query));
-  filtered.sort((a,b)=>ROOMS.indexOf(a.room)-ROOMS.indexOf(b.room)||CATEGORIES.indexOf(a.category)-CATEGORIES.indexOf(b.category)||a.name.localeCompare(b.name,'ru'));
-  renderRooms();$('#rows').replaceChildren();
-  let prevRoom=null,prevCategory=null;
-  for(const i of filtered){
-    if(prevRoom!==i.room){
-      prevRoom=i.room;prevCategory=null;
-      const row=elem('tr',undefined,'room-group');
-      const td=elem('td');td.colSpan=5;
-      const byRoom=filtered.filter(x=>x.room===i.room);
-      td.append(elem('strong',ROOM_PRESETS[i.room]||i.room),elem('span',byRoom.length+' поз. · '+money.format(sum(byRoom))));
-      row.append(td);$('#rows').append(row);
-    }
-    if(prevCategory!==i.category){
-      prevCategory=i.category;
-      const row=elem('tr',undefined,'category-group');
-      const td=elem('td',i.category);td.colSpan=5;
-      row.append(td);$('#rows').append(row);
-    }
-    const row=elem('tr',undefined,'item-row');
-    const name=elem('td');
-    const button=elem('button',i.name,'item-name');
-    button.setAttribute('aria-label','Изменить материал: '+i.name);
-    button.onclick=()=>openEditor(i);
-    name.append(button);row.append(name);
-    row.onclick=e=>{if(!e.target.closest('button'))openEditor(i)};
-    const spec=elem('td',i.spec||'—','spec-cell');row.append(spec);
-    const cells=[
-      ['Количество',i.quantity===null?'Уточнить':(i.quantityApprox?'≈ ':'')+number.format(i.quantity)+' '+i.unit],
-      ['Цена / ед.',i.price===null?'Уточнить':(i.priceApprox?'≈ ':'')+money.format(i.price)],
-      ['Сумма',amount(i)===null?'—':((i.quantityApprox||i.priceApprox)?'≈ ':'')+money.format(amount(i))]
-    ];
-    for(const [label,value] of cells){
-      const td=elem('td',value,'money');td.dataset.label=label;row.append(td);
-    }
-    $('#rows').append(row);
-  }
-  $('#empty').hidden=filtered.length!==0;
-  $('#visible-count').textContent='Показано '+filtered.length+' из '+all.length;
-  $('#visible-total').textContent='Сумма выбранного: '+money.format(sum(filtered));
+  const unknown=all.filter(i=>amount(i)===null).length;
+  $('#unknown').textContent=unknown+' позиций без полной суммы';
+  $('#section-total').textContent='По выборке: '+money.format(sum(filtered));
+  $('#mode-summary').setAttribute('aria-pressed',String(viewMode==='summary'));
+  $('#mode-rooms').setAttribute('aria-pressed',String(viewMode==='rooms'));
+  $('#mode-summary').classList.toggle('active',viewMode==='summary');
+  $('#mode-rooms').classList.toggle('active',viewMode==='rooms');
+  $('#rows').replaceChildren();
+  if(viewMode==='summary')renderSummary(filtered);else renderRoomList(filtered);
+  $('#empty').hidden=filtered.length>0;
+  $('#visible-count').textContent=filtered.length+' из '+all.length+' позиций';
+  $('#visible-total').textContent=money.format(sum(filtered));
 }
-for(const c of ['',...CATEGORIES]){
-  const option=elem('option',c||'Все виды материалов');option.value=c;$('#categories').append(option);
+for(const [val,label] of [['','Все материалы'],[WIRES_FILTER,'Кабели и провода'],...CATEGORIES.map(c=>[c,c])]){
+  const option=elem('option',label);
+  option.value=val;$('#categories').append(option);
 }
+$('#mode-summary').onclick=()=>{viewMode='summary';activeRoom='';render();};
+$('#mode-rooms').onclick=()=>{viewMode='rooms';render();};
 const form=$('#item-form');
 for(const c of CATEGORIES){const o=elem('option',c);o.value=c;form.elements.category.append(o);}
 for(const r of ROOMS){const o=elem('option',ROOM_PRESETS[r]||r);o.value=r;form.elements.room.append(o);}
@@ -279,7 +378,7 @@ form.onsubmit=event=>{
 $('#add').onclick=()=>openEditor();
 $('#close').onclick=$('#cancel').onclick=()=>$('#editor').close();
 $('#search').oninput=render;
-$('#categories').onchange=()=>{category=$('#categories').value;render();};
+$('#categories').onchange=()=>{materialFilter=$('#categories').value;render();};
 $('#export').onclick=()=>{
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
