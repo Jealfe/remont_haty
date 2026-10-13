@@ -129,3 +129,30 @@ label input,label select,label textarea{display:block;margin-top:5px;font-weight
 .measurements-link{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:1px solid var(--line);border-radius:7px;text-decoration:none;color:var(--ink);white-space:nowrap;font-size:12px}
 .measurements-link:hover{background:var(--wash)}
 @media(max-width:380px){.site-header{gap:7px}.brand{font-size:14px}.actions{gap:5px}.measurements-link{padding:7px;font-size:11px}.actions .primary{padding:7px;font-size:11px}}
+
+
+/* Этапы и три суммы. Важно сохранить компактную мобильную версию. */
+.total-line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:0}
+.total-line>span{min-width:0;display:grid;gap:4px}
+.total-line strong{font-size:clamp(16px,2.1vw,22px);white-space:nowrap;font-variant-numeric:tabular-nums}
+.budget-note{font-size:11px;line-height:1.4;color:var(--muted);margin:-4px 0 12px}
+.stage-breakdown{border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:0 0 13px;font-size:12px}
+.stage-breakdown>summary{cursor:pointer;font-weight:600}
+#stage-budget-rows{display:grid;gap:0;margin-top:8px}
+.stage-budget-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 12px;padding:9px 0;border-top:1px solid var(--line)}
+.stage-budget-name{font-size:12px}
+.stage-budget-cost{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stage-budget-extra{grid-column:1/-1;color:var(--muted);font-size:11px}
+.filters{display:grid;grid-template-columns:minmax(140px,1.1fr) minmax(130px,1fr) minmax(130px,1.3fr);gap:8px}
+.filters select,.filters input{width:100%;min-width:0;flex:none}
+@media(max-width:700px){
+  .total-line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:0}
+  .total-line>span{font-size:10px;line-height:1.3}
+  .total-line strong{font-size:clamp(13px,3.6vw,17px);letter-spacing:-.35px}
+  .budget-note{font-size:10px;margin:0 0 9px}
+  .stage-breakdown{padding:8px 10px;margin-bottom:10px}
+  .filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+  .filters #stages{grid-column:1/-1}
+  .filters select,.filters input{width:100%;min-width:0;flex:none}
+  .stage-budget-row{gap:2px 8px}
+}
