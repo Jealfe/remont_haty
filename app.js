@@ -412,6 +412,20 @@ const expandedRooms=new Set();
 const expandedBundles=new Set();
 let viewMode='summary';
 let materialFilter='';
+function syncCategoryFilter(all){
+  // Не показываем категории, в которых ещё нет согласованных товаров.
+  const choices=[['','Все материалы']];
+  if(all.some(isWire))choices.push([WIRES_FILTER,'Кабели и провода']);
+  for(const c of CATEGORIES)if(all.some(i=>i.category===c))choices.push([c,c]);
+  if(!choices.some(([value])=>value===materialFilter))materialFilter='';
+  const select=$('#categories');
+  select.replaceChildren();
+  for(const [value,label] of choices){
+    const option=elem('option',label);
+    option.value=value;select.append(option);
+  }
+  select.value=materialFilter;
+}
 function nameOfRoom(room){return ROOM_PRESETS[room]||room;}
 function getFiltered(){
   const query=$('#search').value.trim().toLocaleLowerCase('ru');
@@ -541,6 +555,7 @@ function renderRoomList(items){
 }
 function render(){
   const all=materials();
+  syncCategoryFilter(all);
   const filtered=getFiltered();
   $('#total').textContent=money.format(sum(all.filter(i=>i.category!=='Инструменты')));
   $('#tools-total').textContent=money.format(sum(all.filter(i=>i.category==='Инструменты')));
@@ -556,10 +571,6 @@ function render(){
   $('#empty').hidden=filtered.length>0;
   $('#visible-count').textContent=filtered.length+' из '+all.length+' позиций';
   $('#visible-total').textContent=money.format(sum(filtered));
-}
-for(const [val,label] of [['','Все материалы'],[WIRES_FILTER,'Кабели и провода'],...CATEGORIES.map(c=>[c,c])]){
-  const option=elem('option',label);
-  option.value=val;$('#categories').append(option);
 }
 $('#mode-summary').onclick=()=>{viewMode='summary';activeRoom='';render();};
 $('#mode-rooms').onclick=()=>{viewMode='rooms';render();};
