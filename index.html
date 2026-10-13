@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Короткая сводка покупок для ремонта квартиры: материалы, количество и цены.">
 <title>Ремонт Хаты — смета материалов</title>
-<link rel="stylesheet" href="styles.css?v=7">
-<script defer src="app.js?v=14"></script>
+<link rel="stylesheet" href="styles.css?v=8">
+<script defer src="app.js?v=15"></script>
 </head>
 <body>
 <header class="site-header">
@@ -25,12 +25,22 @@
   </div>
 </header>
 <main>
-  <div class="total-line"><span>Материалы <strong id="total">—</strong></span><span>Инструменты и расходники <strong id="tools-total">—</strong></span></div>
+  <div class="total-line">
+    <span>Общий бюджет* <strong id="total">—</strong></span>
+    <span>Уже куплено <strong id="paid-total">—</strong></span>
+    <span>Осталось купить <strong id="remaining-total">—</strong></span>
+  </div>
+  <p class="budget-note" id="budget-missing">*Только заполненные позиции. Бюджет пока неполный.</p>
+  <details class="stage-breakdown">
+    <summary>Бюджет по этапам</summary>
+    <div id="stage-budget-rows"></div>
+  </details>
   <nav class="view-switch" aria-label="Как показать смету">
     <button type="button" id="mode-summary" class="active" aria-pressed="true">Сводка</button>
     <button type="button" id="mode-rooms" aria-pressed="false">По комнатам</button>
   </nav>
   <div class="filters">
+    <select id="stages" aria-label="Фильтр по этапу ремонта"></select>
     <select id="categories" aria-label="Фильтр по типу материалов"></select>
     <input type="search" id="search" placeholder="Найти материал…" aria-label="Поиск материала">
   </div>
@@ -49,7 +59,7 @@
     <summary>О смете и сохранении данных</summary>
     <p>Сводка объединяет одинаковые наименования материалов по всем помещениям. Если у нескольких позиций различаются цены, показывается «разная / ?». Если не все количества известны, в итогах стоит «+ ?». Нажми на объединённую строку, чтобы открыть её разбивку по помещениям.</p>
     <p>В режиме «По комнатам» нажимай на название помещения для просмотра материалов и стоимости. Для просмотра только проводов выбери фильтр «Кабели и провода».</p>
-    <p>В примечаниях внутри карточки остаются характеристики. Здесь показаны только выбранные или отдельно согласованные позиции. Стоимость работ не учитывается. Пустые количества и цены не включаются в сумму; «≈» означает оценку.</p>
+    <p>Каждую покупку можно отнести к этапу, указать магазин и отметить статус «Куплено». В трёх суммах учитываются все внесённые материалы, инструменты и расходники. Общий бюджет равен «Куплено» + «Осталось купить» по позициям с известным количеством и ценой. Это не полная стоимость ремонта, пока список составляется. Работы не включены. «≈» означает оценку.</p>
     <p><span id="save-state">Данные сохраняются в этом браузере</span>. <span id="unknown"></span>. Перед очисткой браузера сохраняй JSON через меню ⋯ вверху страницы.</p>
     <p>Импорт заменяет смету после подтверждения. <button type="button" id="restore">Восстановить до последнего импорта</button></p>
   </details>
@@ -67,6 +77,7 @@
     <label>Комната<select name="room"></select></label>
     <label>Категория<select name="category"></select></label>
   </div>
+  <label>Этап ремонта<select name="stage"></select></label>
   <label>Параметры, примечания<textarea name="spec" rows="3" maxlength="2000"></textarea></label>
   <div class="form-grid">
     <label>Количество<input name="quantity" inputmode="decimal" placeholder="Неизвестно"></label>
