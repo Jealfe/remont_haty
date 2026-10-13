@@ -123,3 +123,9 @@ label input,label select,label textarea{display:block;margin-top:5px;font-weight
  .total-line>span{font-size:11px;line-height:1.3}
  .total-line strong{font-size:18px}
 }
+
+
+/* Ссылка на размеры остаётся компактной и на телефоне. */
+.measurements-link{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:1px solid var(--line);border-radius:7px;text-decoration:none;color:var(--ink);white-space:nowrap;font-size:12px}
+.measurements-link:hover{background:var(--wash)}
+@media(max-width:380px){.site-header{gap:7px}.brand{font-size:14px}.actions{gap:5px}.measurements-link{padding:7px;font-size:11px}.actions .primary{padding:7px;font-size:11px}}
