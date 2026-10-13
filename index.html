@@ -3,78 +3,85 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Смета материалов ремонта квартиры, сгруппированная по помещениям.">
-<title>Ремонт Хаты — материалы</title>
-<link rel="stylesheet" href="styles.css?v=4">
-<script defer src="app.js?v=4"></script>
+<meta name="description" content="Короткая сводка покупок для ремонта квартиры: материалы, количество и цены.">
+<title>Ремонт Хаты — смета материалов</title>
+<link rel="stylesheet" href="styles.css?v=5">
+<script defer src="app.js?v=5"></script>
 </head>
 <body>
 <header class="site-header">
   <a class="brand" href="./">Ремонт Хаты</a>
   <div class="actions">
-    <button id="export" type="button">Сохранить JSON</button>
-    <button id="import" type="button">Загрузить JSON</button>
+    <button type="button" id="add" class="primary">＋ Материал</button>
+    <details class="backup-menu">
+      <summary aria-label="Дополнительно" title="Резервные копии">⋯</summary>
+      <div class="backup-actions">
+        <button type="button" id="export">Сохранить JSON</button>
+        <button type="button" id="import">Загрузить JSON</button>
+      </div>
+    </details>
     <input id="file" type="file" accept=".json,application/json" hidden>
   </div>
 </header>
 <main>
-  <div class="heading">
-    <div><h1>Материалы для ремонта</h1><p class="subtitle">Предварительный список покупок по помещениям</p></div>
-    <button class="primary" id="add" type="button">＋ Добавить</button>
-  </div>
-  <section class="summary" aria-label="Стоимость материалов">
-    <div class="total-label">Всего по заполненным позициям</div>
-    <strong id="total">—</strong>
-    <span id="section-total">Вся квартира: —</span>
-  </section>
-  <div class="section-label">Помещения</div>
-  <nav id="rooms" class="rooms" aria-label="Выбор помещения"></nav>
+  <div class="total-line"><span>Учтено материалов</span><strong id="total">—</strong></div>
+  <nav class="view-switch" aria-label="Как показать смету">
+    <button type="button" id="mode-summary" class="active" aria-pressed="true">Сводка</button>
+    <button type="button" id="mode-rooms" aria-pressed="false">По комнатам</button>
+  </nav>
   <div class="filters">
-    <input type="search" id="search" aria-label="Поиск по материалам" placeholder="Поиск материала или параметров…">
-    <select id="categories" aria-label="Вид материала"></select>
+    <select id="categories" aria-label="Фильтр по типу материалов"></select>
+    <input type="search" id="search" placeholder="Найти материал…" aria-label="Поиск материала">
   </div>
-  <p class="hint">Нажми на материал, чтобы изменить параметры, количество или цену. Знак ≈ означает предварительную оценку.</p>
-  <div class="table-wrap" role="region" aria-label="Материалы" tabindex="0">
+  <div class="table-wrap" role="region" aria-label="Смета материалов" tabindex="0">
     <table>
-      <thead><tr><th>Материал</th><th>Параметры / заметки</th><th>Количество</th><th>Цена / ед.</th><th>Сумма</th></tr></thead>
+      <thead><tr><th>Материал</th><th>Кол-во</th><th>Цена / ед.</th><th>Сумма</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
-  <div id="empty" hidden>В этом разделе пока нет материалов. Измени фильтр или добавь позицию.</div>
-  <footer class="list-footer"><span id="visible-count"></span><strong id="visible-total"></strong></footer>
-  <p class="storage-note"><span id="save-state">Данные хранятся только в этом браузере</span> · <span id="unknown"></span>. Итог не включает позиции с неизвестными ценами или количеством.</p>
+  <div id="empty" hidden>Ничего не найдено. Измени фильтр или добавь материал.</div>
+  <footer class="list-footer">
+    <span id="visible-count"></span>
+    <strong id="visible-total"></strong>
+  </footer>
   <details class="help">
-    <summary>Как устроена смета и резервные копии</summary>
-    <p>Выбери помещение сверху, затем при необходимости вид материалов. «Общие» — покупки на несколько комнат, которые пока не распределены. При редактировании материала можно изменить его помещение.</p>
-    <p>Здесь считаются только материалы; стоимость работ, ссылки на магазины и статусы покупок не показываются. Предыдущие данные сохраняются в резервном JSON, чтобы их не потерять. Нулевое количество отличается от пустого: пустое означает «ещё не знаем».</p>
-    <p>Изменения хранятся на этом устройстве и не передаются автоматически в GitHub. Экспорт JSON — резервная копия. Импорт заменяет текущую смету только после подтверждения. <button id="restore" type="button">Вернуть данные до последнего импорта</button></p>
+    <summary>О смете и сохранении данных</summary>
+    <p>Сводка объединяет одинаковые наименования материалов по всем помещениям. Если у нескольких позиций различаются цены, показывается «разная / ?». Если не все количества известны, в итогах стоит «+ ?». Нажми на объединённую строку, чтобы открыть её разбивку по помещениям.</p>
+    <p>В режиме «По комнатам» нажимай на название помещения для просмотра материалов и стоимости. Для просмотра только проводов выбери фильтр «Кабели и провода».</p>
+    <p>В примечаниях внутри карточки остаются характеристики. Здесь учитываются только материалы, не стоимость работ. Пустые количества и цены не включаются в сумму; «≈» означает оценку.</p>
+    <p><span id="save-state">Данные сохраняются в этом браузере</span>. <span id="unknown"></span>. Перед очисткой браузера сохраняй JSON через меню ⋯ вверху страницы.</p>
+    <p>Импорт заменяет смету после подтверждения. <button type="button" id="restore">Восстановить до последнего импорта</button></p>
   </details>
+  <span id="section-total" hidden></span>
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
 <dialog id="editor">
 <form id="item-form">
-  <div class="dialog-head"><h2 id="editor-title">Материал</h2><button id="close" type="button" aria-label="Закрыть">×</button></div>
-  <label>Наименование<input name="name" maxlength="150" required></label>
-  <div class="form-grid">
-    <label>Помещение<select name="room"></select></label>
-    <label>Вид материалов<select name="category"></select></label>
+  <div class="dialog-head">
+    <h2 id="editor-title">Материал</h2>
+    <button id="close" type="button" aria-label="Закрыть">×</button>
   </div>
-  <label>Параметры и примечания<textarea name="spec" rows="3" maxlength="2000"></textarea></label>
+  <label>Название<input name="name" maxlength="150" required></label>
+  <div class="form-grid">
+    <label>Комната<select name="room"></select></label>
+    <label>Категория<select name="category"></select></label>
+  </div>
+  <label>Параметры, примечания<textarea name="spec" rows="3" maxlength="2000"></textarea></label>
   <div class="form-grid">
     <label>Количество<input name="quantity" inputmode="decimal" placeholder="Неизвестно"></label>
-    <label>Единица<input name="unit" maxlength="20" placeholder="шт., м, м², рулон" required></label>
+    <label>Единица<input name="unit" maxlength="20" placeholder="м, шт., рулон" required></label>
   </div>
-  <label class="check"><input type="checkbox" name="quantityApprox">Количество примерное</label>
+  <label class="check"><input type="checkbox" name="quantityApprox">Количество приблизительное</label>
   <label>Цена за единицу, ₽<input name="price" inputmode="decimal" placeholder="Неизвестна"></label>
   <label class="check"><input type="checkbox" name="priceApprox" checked>Цена приблизительная</label>
   <p id="form-error" role="alert"></p>
   <div class="dialog-actions">
-    <button class="delete" id="delete-item" type="button" hidden>Удалить</button>
+    <button id="delete-item" type="button" class="delete" hidden>Удалить</button>
     <button id="cancel" type="button">Отмена</button>
     <button class="primary" type="submit">Сохранить</button>
   </div>
 </form>
 </dialog>
-<noscript>Для работы сметы включите JavaScript.</noscript>
+<noscript>Для расчётов и сохранения сметы включите JavaScript.</noscript>
 </body>
 </html>
