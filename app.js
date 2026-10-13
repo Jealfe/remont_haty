@@ -577,12 +577,29 @@ function withBedroomElectricalPlan(data){
   });
   return {...data,catalogRevision:15,items};
 }
+// Ревизия 16. Бюджетная цена 550 ₽ за розетку в сборе и выключатель.
+// Для интернет-розетки RJ45 временно та же условная цена 550 ₽.
+// Коробки под монтаж (подрозетники) считаются отдельно; их цена не утверждена.
+const BEDROOM_MECHANISM_PRICE_IDS=new Set([
+  'bedroom-20261013-sockets','bedroom-20261013-rj45','bedroom-20261013-switch'
+]);
+function withBedroomMechanismPrices(data){
+  if(data.catalogRevision>=16)return data;
+  const items=data.items.map(i=>{
+    if(!BEDROOM_MECHANISM_PRICE_IDS.has(i.id)||i.price!==null||i.status==='Куплено')return i;
+    const label=i.id==='bedroom-20261013-rj45'?'Для RJ45 цена 550 ₽ принята предварительно по аналогии с розетками. ':'';
+    const detail='Ориентировочная цена одного готового механизма с лицевой частью (550 ₽ по решению владельца). Подрозетник отдельно. ';
+    const spec=(i.spec.includes('Модель,')?i.spec.replace('Модель, серия и цена ещё не выбраны.', 'Модель и серия ещё не выбраны.').replace('Модель, экранирование и цена ещё не выбраны.','Модель и экранирование ещё не выбраны.'):i.spec);
+    return {...i,price:550,priceApprox:true,spec:spec+' '+label+detail};
+  });
+  return {...data,catalogRevision:16,items};
+}
 function initial(){
-  return withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))))))));
+  return withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())))))))));
 }
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base))))));
+  return withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base)))))));
 }
 
 function amount(i){
