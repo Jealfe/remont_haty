@@ -61,7 +61,7 @@
 .flooring-table td:not(:first-child){font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:700px){.flooring-totals{grid-template-columns:repeat(2,minmax(0,1fr))}.flooring-totals strong{font-size:17px}.flooring-table{min-width:740px}}
 </style>
-<script defer src="dimensions.js?v=3"></script>
+<script defer src="dimensions.js?v=4"></script>
 </head>
 <body>
 <header class="site-header">
@@ -74,8 +74,8 @@
   </div>
   <div class="measurement-totals">
     <div><span>Площадь всех помещений</span><strong id="total-area">—</strong></div>
-    <div><span>Без двух санузлов</span><strong id="dry-area">—</strong></div>
-    <div><span>Полы: комнаты + кухня + коридор*</span><strong id="linoleum-area">—</strong></div>
+    <div><span>Линолеум, включая кладовую</span><strong id="dry-area">—</strong></div>
+    <div><span>Без кладовой (для сравнения)</span><strong id="linoleum-area">—</strong></div>
   </div>
   <section class="measurements-page-section" aria-label="Площади помещений">
     <h2>Комнаты и площади</h2>
@@ -85,7 +85,7 @@
         <tbody id="dimension-rows"></tbody>
       </table>
     </div>
-    <p class="dimension-note">Периметр и площадь стен — без вычета окон, дверей и ниш. Для Г-образного коридора площадь посчитана по твоей формуле, но периметр стен оставлен на уточнение по плану. *74,08 м² — площадь без санузлов и кладовой, до запаса и подрезки линолеума. Если кладовую тоже покрывать линолеумом, получается 78,10 м².</p>
+    <p class="dimension-note">Периметр и площадь стен — без вычета окон, дверей и ниш. Для Г-образного коридора площадь посчитана по твоей формуле, но периметр стен оставлен на уточнение по плану. Линолеум предусмотрен во всех помещениях, кроме санузлов: общая площадь пола 78,10 м². Из неё кладовая 4,02 м² предварительно выкраивается из остатка коридорного отреза; площадь закупки по рулонам показана ниже и больше площади пола.</p>
   </section>
 
   <section class="measurements-page-section" aria-label="Предварительная стоимость линолеума">
