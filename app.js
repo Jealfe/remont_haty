@@ -238,11 +238,11 @@ function validate(data){
   const items=data.items.map(i=>{
     if(!i||typeof i.id!=='string'||!i.id||i.id.length>100||ids.has(i.id))throw Error('Повторяющиеся или неверные ID.');
     ids.add(i.id);
-    for(const [k,max] of [['name',150],['spec',2000],['unit',20],['url',2000]]){
-      if(typeof i[k]!=='string'||i[k].length>max)throw Error('Некорректное поле: '+k);
+    for(const [k,max] of [['name',150],['spec',2000],['unit',20],['url',2000],['shop',100]]){
+      if(typeof (k==='shop'?(i.shop??''):i[k])!=='string'||(k==='shop'?(i.shop??''):i[k]).length>max)throw Error('Некорректное поле: '+k);
     }
     if(!i.name.trim()||!i.unit.trim()||!CATEGORIES.includes(i.category)||!STATUSES.includes(i.status)||!['material','labor'].includes(i.kind)||typeof i.priceApprox!=='boolean'||typeof i.quantityApprox!=='boolean')throw Error('Некорректные параметры позиции.');
-    return {id:i.id,name:i.name.trim(),spec:i.spec,category:i.category,room:ROOMS.includes(i.room)?i.room:inferRoom(i),unit:i.unit.trim(),quantity:parseNum(i.quantity),price:parseNum(i.price),quantityApprox:i.quantityApprox,priceApprox:i.priceApprox,status:i.status,kind:i.kind,url:safeUrl(i.url)};
+    return {id:i.id,name:i.name.trim(),spec:i.spec,category:i.category,room:ROOMS.includes(i.room)?i.room:inferRoom(i),unit:i.unit.trim(),quantity:parseNum(i.quantity),price:parseNum(i.price),quantityApprox:i.quantityApprox,priceApprox:i.priceApprox,status:i.status,shop:i.shop??'',kind:i.kind,url:safeUrl(i.url)};
   });
   return {version:1,catalogRevision:Number.isInteger(data.catalogRevision)?data.catalogRevision:0,updatedAt:new Date().toISOString(),items};
 }
@@ -343,13 +343,13 @@ const AUTO_CREATED_BASELINE=new Map(
   correctBathroomNumbers(initialPrior()).items.map(i=>[i.id,i])
 );
 const USER_EDITABLE_FIELDS=[
-  'name','spec','quantity','unit','price','category','room',
+  'name','spec','quantity','unit','price','category','room','shop',
   'priceApprox','quantityApprox','kind','status','url'
 ];
 function userHasEditedAutoItem(item){
   const baseline=AUTO_CREATED_BASELINE.get(item.id);
   if(!baseline)return true; // любые самостоятельно добавленные позиции сохраняются
-  return USER_EDITABLE_FIELDS.some(k=>item[k]!==baseline[k]);
+  return USER_EDITABLE_FIELDS.some(k=>(item[k]??'')!==(baseline[k]??''));
 }
 function cleanupUnselectedCatalog(data){
   if(data.catalogRevision>=8)return data;
@@ -382,10 +382,47 @@ function removePrematureDisc(data){
       .every(k=>i[k]===DISC_ITEM[k]);
   return {...data,catalogRevision:10,items:data.items.filter(i=>!unchanged(i))};
 }
-function initial(){return removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())));}
+
+/*
+ * Ревизия 11. Подтверждены две отдельные позиции этапа разметки.
+ * Штатив из подборки за 1005 ₽ фактически куплен за 1000 ₽.
+ * Его бренд и фактическое место покупки не подтверждены.
+ */
+const CONFIRMED_MARKING_ITEMS=[
+  {
+    id:'confirmed-20261013-paowafol-4d',name:'Лазерный уровень PAOWAFOL 4D, 16 линий',
+    spec:'Выбранный кандидат из подборки Ozon, цена со скриншота 2613 ₽. Пока не куплен.',
+    category:'Инструменты',room:'Общие',quantity:1,unit:'шт.',
+    price:2613,priceApprox:true,quantityApprox:false,
+    shop:'Ozon',kind:'material',url:'',status:'Запланировано'
+  },
+  {
+    id:'confirmed-20261013-laser-tripod',name:'Штатив для лазерного уровня 80–340 см',
+    spec:'В подборке Ozon был за 1005 ₽ (не путать с отдельным штативом WIBEK за 1112 ₽). Куплен за 1000 ₽; фактический магазин покупки не уточнён.',
+    category:'Инструменты',room:'Общие',quantity:1,unit:'шт.',
+    price:1000,priceApprox:false,quantityApprox:false,
+    shop:'',kind:'material',url:'',status:'Куплено'
+  }
+];
+function addConfirmedMarkingItems(data){
+  if(data.catalogRevision>=11)return data;
+  const items=[...data.items];
+  for(const item of CONFIRMED_MARKING_ITEMS){
+    const equivalent=items.some(i=>i.id===item.id||
+      (i.category==='Инструменты'&&(
+        (item.id.includes('paowafol')&&/лазерн/i.test(i.name)&&/PAOWAFOL/i.test(i.name))||
+        (item.id.includes('tripod')&&/штатив/i.test(i.name)&&/лазерн/i.test(i.name)&&i.price===1000)
+      )));
+    if(!equivalent)items.push({...item});
+  }
+  return {...data,catalogRevision:11,items};
+}
+function initial(){
+  return addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))));
+}
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return removePrematureDisc(base);
+  return addConfirmedMarkingItems(removePrematureDisc(base));
 }
 
 function amount(i){
@@ -458,7 +495,7 @@ function getFiltered(){
   const query=$('#search').value.trim().toLocaleLowerCase('ru');
   return materials().filter(i=>
     (!materialFilter||(materialFilter===WIRES_FILTER?isWire(i):i.category===materialFilter))
-    &&(!query||[i.name,i.spec,i.category,i.room,nameOfRoom(i.room)].join(' ').toLocaleLowerCase('ru').includes(query))
+    &&(!query||[i.name,i.spec,i.category,i.room,nameOfRoom(i.room),i.shop||'',i.status].join(' ').toLocaleLowerCase('ru').includes(query))
   );
 }
 function formatQuantity(item){
@@ -504,7 +541,8 @@ function materialRow(item,{child=false,subtitle=''}={}){
   b.type='button';b.onclick=()=>openEditor(item);
   b.setAttribute('aria-label','Изменить '+item.name);
   title.append(b);
-  if(subtitle)title.append(elem('div',subtitle,'item-subtitle'));
+  const meta=[subtitle,item.shop||'',item.status==='Куплено'?'✓ Куплено':''].filter(Boolean);
+  if(meta.length)title.append(elem('div',meta.join(' · '),'item-subtitle'));
   tr.append(title);
   for(const [label,value] of [['Количество',formatQuantity(item)],['Цена',formatPrice(item)],['Сумма',formatAmount(item)]]){
     const td=elem('td',value,'money');td.dataset.label=label;tr.append(td);
@@ -604,19 +642,21 @@ $('#mode-rooms').onclick=()=>{viewMode='rooms';render();};
 const form=$('#item-form');
 for(const c of CATEGORIES){const o=elem('option',c);o.value=c;form.elements.category.append(o);}
 for(const r of ROOMS){const o=elem('option',ROOM_PRESETS[r]||r);o.value=r;form.elements.room.append(o);}
+for(const status of STATUSES){const o=elem('option',status);o.value=status;form.elements.status.append(o);}
 function openEditor(item=null){
   editing=item?.id??null;form.reset();
   $('#form-error').textContent='';
   $('#editor-title').textContent=item?'Изменить материал':'Новый материал';
   $('#delete-item').hidden=!item;
   if(item){
-    for(const k of ['name','spec','unit','category','room','price','quantity'])form.elements[k].value=item[k]??'';
+    for(const k of ['name','spec','unit','category','room','price','quantity','shop','status'])form.elements[k].value=item[k]??'';
     form.elements.priceApprox.checked=item.priceApprox;
     form.elements.quantityApprox.checked=item.quantityApprox;
   }else{
     form.elements.category.value=category||'Электрика';
     form.elements.room.value=activeRoom||'Общие';
     form.elements.unit.value='шт.';
+    form.elements.status.value='Уточнить';
     form.elements.priceApprox.checked=true;
   }
   $('#editor').showModal();form.elements.name.focus();
@@ -626,7 +666,7 @@ form.onsubmit=event=>{
   try{
     const prior=state.items.find(i=>i.id===editing);
     const item=prior?{...prior}:{id:'item-'+Date.now()+'-'+Math.random().toString(36).slice(2),kind:'material',status:'Уточнить',url:''};
-    for(const k of ['name','spec','category','room','unit'])item[k]=form.elements[k].value.trim();
+    for(const k of ['name','spec','category','room','unit','shop','status'])item[k]=form.elements[k].value.trim();
     for(const k of ['quantity','price'])item[k]=parseNum(form.elements[k].value.trim());
     for(const k of ['quantityApprox','priceApprox'])item[k]=form.elements[k].checked;
     const next=validate({...state,items:editing?state.items.map(i=>i.id===editing?item:i):[...state.items,item]});
