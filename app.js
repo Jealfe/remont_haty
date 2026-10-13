@@ -68,6 +68,7 @@ const ROOM_PRESETS={
   'Комната 3':'Детская / комната 3'
 };
 const MIGRATION_BACKUP=KEY+'-before-rooms';
+const NON_MATERIALS=new Set(['Аренда штробореза и пылесоса','Доставка материалов','Вывоз строительного мусора']);
 function inferRoom(item){
   if(item.category==='Освещение'&&['COB-лента для спальни','Встраиваемый алюминиевый профиль','Рассеиватель','Блок питания 24 В','Диммер для ленты 24 В'].includes(item.name))return 'Спальня';
   if(item.category==='Санузлы'&&['Нагревательный мат','Программируемый терморегулятор'].includes(item.name))return 'Санузел 1';
@@ -101,7 +102,7 @@ function additions(){
 }
 function initial(){
   const raw=baseInitial();
-  return {...raw,catalogRevision:2,items:[...raw.items.filter(i=>i.kind==='material').map(i=>({...i,room:inferRoom(i)})),...additions()]};
+  return {...raw,catalogRevision:2,items:[...raw.items.filter(i=>i.kind==='material'&&!NON_MATERIALS.has(i.name)).map(i=>({...i,room:inferRoom(i)})),...additions()]};
 }
 function parseNum(value){
   if(value===null||value==='')return null;
@@ -179,7 +180,7 @@ function commit(next){
     render();return true;
   }catch(e){notice(e.message,true);return false;}
 }
-function materials(){return state.items.filter(i=>i.kind==='material');}
+function materials(){return state.items.filter(i=>i.kind==='material'&&!NON_MATERIALS.has(i.name));}
 function renderRooms(){
   const nav=$('#rooms');nav.replaceChildren();
   const all=materials();
