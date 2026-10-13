@@ -42,6 +42,15 @@ function upgrade(data){
 const previousMerge=mergeCatalog;mergeCatalog=data=>upgrade(previousMerge(data));
 const previousInitial=initial;initial=()=>upgrade(previousInitial());
 
+// В разделе «Кабели и провода» не должны оказываться кабельные стяжки
+// и монтажные площадки: прежнее правило искало любое слово «кабел».
+const originalIsWire=isWire;
+isWire=function(item){
+ const n=item.name||'';
+ return /(?:^|[\\s(])(?:кабель|провод|ввг|utp|ftp)(?:[\\s:(]|$)/i.test(n)
+   || /^интернет-кабель(?:[\\s:]|$)/i.test(n);
+};
+
 // Два трековых комплекта разных зон одной кухни-гостиной показываем
 // одной строкой только в «Сводке». В «По комнатам» названия зон остаются.
 const originalBundleKey=bundleKey;
