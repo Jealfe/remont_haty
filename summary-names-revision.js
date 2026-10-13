@@ -47,8 +47,8 @@ const previousInitial=initial;initial=()=>upgrade(previousInitial());
 const originalIsWire=isWire;
 isWire=function(item){
  const n=item.name||'';
- return /(?:^|[\\s(])(?:кабель|провод|ввг|utp|ftp)(?:[\\s:(]|$)/i.test(n)
-   || /^интернет-кабель(?:[\\s:]|$)/i.test(n);
+ return /(?:^|[\s(])(?:кабель|провод|ввг|utp|ftp)(?:[\s:(]|$)/i.test(n)
+   || /^интернет-кабель(?:[\s:]|$)/i.test(n);
 };
 
 // Два трековых комплекта разных зон одной кухни-гостиной показываем
