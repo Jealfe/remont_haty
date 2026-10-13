@@ -533,12 +533,56 @@ function withDiscussedSupplies(data){
   });
   return {...data,catalogRevision:14,items};
 }
+// Ревизия 15. Завершённый согласованный план электрики спальни.
+// 10 силовых розеток + 1 RJ45 + 1 двухклавишный выключатель = 12 подрозетников.
+// Кондиционер подключается напрямую, без подрозетника и розетки.
+// Сами приборы и расходники пока не выбраны, поэтому цену не выдумываем.
+const BEDROOM_ELECTRICAL_PLAN=[
+  {
+    id:'bedroom-20261013-sockets',name:'Розетки 230 В — спальня',
+    spec:'10 механизмов: швейный стол 3, возле кровати 2, телевизор 2, зарядка вертикального пылесоса 1, запасная возле неё 1, база робота-пылесоса 1. Количество согласовано по предварительной расстановке мебели. Модель, серия и цена ещё не выбраны.',
+    quantity:10,unit:'шт.'
+  },
+  {
+    id:'bedroom-20261013-rj45',name:'Интернет-розетка RJ45 — спальня',
+    spec:'1 механизм возле телевизора. Выбрана именно розетка RJ45, не открытый вывод кабеля. Модель, экранирование и цена ещё не выбраны.',
+    quantity:1,unit:'шт.'
+  },
+  {
+    id:'bedroom-20261013-switch',name:'Двухклавишный выключатель — спальня',
+    spec:'1 механизм у входа: клавиша 1 — шесть точечных светильников, клавиша 2 — световая линия. Дополнительный выключатель возле кровати не предусмотрен.',
+    quantity:1,unit:'шт.'
+  },
+  {
+    id:'bedroom-20261013-underboxes',name:'Подрозетники — спальня',
+    spec:'12 шт.: для десяти механизмов розеток 230 В, одной RJ45 и одного двухклавишного выключателя. Для кондиционера — отдельный вывод кабеля из стены под потолком, БЕЗ розетки и подрозетника. Проводка по потолку, точный раскрой трасс после проекта SketchUp. Тип подрозетников и цена после выбора основания и механизмов.',
+    quantity:12,unit:'шт.'
+  }
+];
+function withBedroomElectricalPlan(data){
+  if(data.catalogRevision>=15)return data;
+  const items=[...data.items];
+  const lookFor=[
+    /розетк.*230|силов.*розетк|электрическ.*розетк/i,
+    /интернет.розетк|розетк.*rj.?45|rj.?45.*розетк/i,
+    /двухклавиш.*выключ|выключ.*двухклавиш/i,
+    /подрозетник/i
+  ];
+  BEDROOM_ELECTRICAL_PLAN.forEach((info,index)=>{
+    const exists=items.some(i=>i.id===info.id||(i.room==='Спальня'&&lookFor[index].test(i.name)));
+    if(!exists)items.push({
+      ...info,category:'Электрика',room:'Спальня',stage:'Электрика',kind:'material',
+      price:null,priceApprox:false,quantityApprox:false,status:'Запланировано',shop:'',url:''
+    });
+  });
+  return {...data,catalogRevision:15,items};
+}
 function initial(){
-  return withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())))))));
+  return withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))))))));
 }
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base)))));
+  return withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base))))));
 }
 
 function amount(i){
