@@ -1,0 +1,67 @@
+/* Отдельный рабочий план ремонта по комнатам */
+.plan-main{max-width:1000px;padding-top:25px}
+.plan-intro{margin:0 0 20px}
+.plan-intro h1{font-size:clamp(22px,4vw,30px);letter-spacing:-.02em;line-height:1.2;margin:0 0 10px}
+.plan-intro p{color:var(--ink);font-size:14px;line-height:1.6;max-width:840px;margin:0 0 8px}
+.plan-intro .plan-updated{color:var(--muted);font-size:12px}
+.plan-nav .active-link{background:var(--wash);color:var(--accent);font-weight:700;border-color:#bed7c3}
+.room-quick{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 20px}
+.room-quick a{display:inline-block;font-size:12px;line-height:1.3;padding:7px 10px;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:6px}
+.room-quick a:hover{background:var(--wash)}
+.plan-room{scroll-margin-top:18px;border:1px solid var(--line);border-radius:11px;padding:20px 22px;margin:0 0 17px}
+.plan-room-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px 20px;margin-bottom:13px}
+.plan-room-head h2{font-size:19px;line-height:1.2;margin:0 0 5px}
+.plan-room-head p{color:var(--muted);margin:0;font-size:12px}
+.plan-count{white-space:nowrap;background:var(--wash);border:1px solid var(--line);color:var(--accent);font-size:12px;font-weight:700;border-radius:7px;padding:7px 11px}
+.plan-count.draft-count{color:#6c705c;background:#f7f7f1}
+.plan-metrics{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 20px}
+.plan-metrics span{padding:8px 11px;background:var(--wash);border-radius:6px;font-size:12px}
+.plan-metrics strong{font-size:16px;margin-right:2px}
+.plan-room h3,.plan-common h2{font-size:14px;line-height:1.4;margin:18px 0 9px}
+.plan-room h3:first-of-type{margin-top:12px}
+.plan-rows{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.plan-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 13px;border-top:1px solid var(--line)}
+.plan-line:first-child{border-top:none}
+.plan-line strong{display:block;font-size:13px;line-height:1.4;font-weight:650}
+.plan-line small{display:block;color:var(--muted);font-size:12px;line-height:1.5;margin-top:3px}
+.plan-line b{font-size:15px;min-width:28px;text-align:center;align-self:start;font-variant-numeric:tabular-nums}
+.plan-extra{line-height:1.6;color:var(--ink);margin:11px 0 14px;font-size:12px}
+.plan-hint{background:#f7faf7;border:1px solid var(--line);border-radius:8px;padding:11px 13px;color:var(--ink);line-height:1.6;font-size:12px;margin:12px 0 0}
+.plan-context{font-size:12px;line-height:1.6;margin:0 0 12px;color:var(--ink)}
+.plan-room.compact-room{padding:14px 19px}
+.plan-room.compact-room h2{font-size:16px}
+.plan-room.compact-room p{font-size:12px;line-height:1.65;margin:7px 0 0}
+.plan-common{margin:23px 0 14px}
+.plan-common h2{font-size:18px}
+.plan-common-item{border-top:1px solid var(--line);padding:12px 14px}
+.plan-common-item:first-child{border-top:0}
+.plan-common-item strong{font-size:13px}
+.plan-common-item p{margin:4px 0 0;font-size:12px;line-height:1.6}
+.plan-footnote{color:var(--muted);font-size:11px;line-height:1.6;max-width:800px;margin:18px 0 12px}
+@media(max-width:700px){
+ .plan-main{padding:17px 10px 30px}
+ .plan-intro p{font-size:12px;line-height:1.6}
+ .room-quick{gap:5px;margin-bottom:14px}
+ .room-quick a{padding:6px 8px;font-size:11px}
+ .plan-room{padding:13px 12px;margin-bottom:11px}
+ .plan-room-head{display:block;margin-bottom:10px}
+ .plan-room-head h2{font-size:17px}
+ .plan-count{display:inline-block;margin-top:9px;font-size:11px;padding:5px 7px}
+ .plan-metrics{gap:5px;margin-bottom:13px}
+ .plan-metrics span{padding:7px 8px;font-size:11px}
+ .plan-metrics strong{font-size:14px}
+ .plan-room h3{margin:15px 0 7px;font-size:13px}
+ .plan-line{padding:9px 10px}
+ .plan-line strong{font-size:12px}
+ .plan-line small{font-size:11px}
+ .plan-line b{font-size:13px}
+ .plan-room.compact-room{padding:12px}
+ .plan-room.compact-room h2{font-size:15px}
+ .plan-nav{gap:4px;flex-wrap:nowrap}
+ .plan-nav .measurements-link{padding:6px 7px;font-size:11px}
+}
+@media print{
+ .room-quick,.plan-nav{display:none}
+ .plan-room{break-inside:avoid}
+ .plan-main{padding-top:5px}
+}
