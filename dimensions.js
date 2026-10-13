@@ -46,6 +46,64 @@ function wallArea(room){
   const perimeter=perimeterMm(room);
   return perimeter===null?null:perimeter*APARTMENT_DIMENSIONS.ceilingHeightMm/1000000;
 }
+
+const FLOORING_COMPARE={
+  trimMm:100, // +10 см к размеру каждой цельной заготовки
+  options:[
+    {id:'roberta',name:'Tarkett «Дуб Роберта»',article:'231116003',rollWidthMm:3500,priceRubSqM:875,thicknessMm:3.5,wearLayerMm:0.4,class:32},
+    {id:'kasli',name:'Kreaforta «Касли»',article:'89441404',rollWidthMm:4000,priceRubSqM:915,thicknessMm:4.6,wearLayerMm:0.4,class:32}
+  ]
+};
+function flooringCutPlan(option){
+  const trim=FLOORING_COMPARE.trimMm;
+  const byName=new Map(APARTMENT_DIMENSIONS.rooms.map(r=>[r.id,r]));
+  const cuts=['bedroom','kitchen','child1','child2'].map(id=>{
+    const r=byName.get(id);
+    const cutLengthMm=Math.max(r.lengthMm,r.widthMm)+trim;
+    const cutAcrossMm=Math.min(r.lengthMm,r.widthMm)+trim;
+    return {id,name:r.name,cutLengthMm,cutAcrossMm,fit:cutAcrossMm<=option.rollWidthMm};
+  });
+  const hall=byName.get('hall'),store=byName.get('storage');
+  const hallCutLengthMm=hall.first.lengthMm+trim;
+  const hallCutAcrossMm=hall.second.fullWidthMm+trim;
+  const spacePastSecondMm=hallCutLengthMm-(hall.second.lengthMm+trim);
+  const freeSideMm=option.rollWidthMm-(hall.first.widthMm+trim);
+  const storeFits=spacePastSecondMm>=store.lengthMm+trim&&freeSideMm>=store.widthMm+trim;
+  cuts.push({
+    id:'hall-and-storage',
+    name:'Коридор + кладовая*',
+    cutLengthMm:hallCutLengthMm,
+    cutAcrossMm:hallCutAcrossMm,
+    fit:hallCutAcrossMm<=option.rollWidthMm&&storeFits
+  });
+  const totalLm=cuts.reduce((s,c)=>s+c.cutLengthMm,0)/1000;
+  const buySqM=totalLm*option.rollWidthMm/1000;
+  return {option,cuts,totalLm,buySqM,priceRub:buySqM*option.priceRubSqM,
+    allFit:cuts.every(c=>c.fit),hallAndStoreFromOneCut:storeFits};
+}
+function drawFlooringCompare(){
+  const [roberta,kasli]=FLOORING_COMPARE.options.map(flooringCutPlan);
+  const rub=n=>new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(n);
+  byId('floor-roberta').textContent=rub(roberta.priceRub);
+  byId('floor-kasli').textContent=rub(kasli.priceRub);
+  byId('floor-savings').textContent=rub(kasli.priceRub-roberta.priceRub);
+  byId('floor-roberta-buy').textContent=precision(roberta.buySqM)+' м²';
+  byId('floor-kasli-buy').textContent=precision(kasli.buySqM)+' м²';
+  const table=byId('flooring-rows');
+  for(let index=0;index<roberta.cuts.length;index++){
+    const a=roberta.cuts[index],b=kasli.cuts[index];
+    const tr=create('tr');
+    const length=precision(a.cutLengthMm/1000);
+    for(const value of [a.name,length,precision(a.cutLengthMm*roberta.option.rollWidthMm/1e6),rub(a.cutLengthMm*roberta.option.rollWidthMm/1e6*roberta.option.priceRubSqM),precision(b.cutLengthMm*kasli.option.rollWidthMm/1e6),rub(b.cutLengthMm*kasli.option.rollWidthMm/1e6*kasli.option.priceRubSqM)])
+      tr.append(create('td',value));
+    table.append(tr);
+  }
+  if(!roberta.allFit||!kasli.allFit)
+    byId('floor-fit-note').textContent='ВНИМАНИЕ: одна из заготовок не помещается в выбранную ширину рулона. Требуется другой раскрой.';
+  else
+    byId('floor-fit-note').textContent='*Кладовую предварительно можно выкроить из свободной части отреза Г-образного коридора, если фактическая форма совпадает с расчётной. Коридор можно вырезать цельной Г-образной деталью, без внутреннего шва.';
+}
+
 const precision=(n,digits=2)=>n.toLocaleString('ru-RU',{minimumFractionDigits:digits,maximumFractionDigits:digits});
 const byId=id=>document.getElementById(id);
 const create=(tag,value,cls)=>{
@@ -65,6 +123,7 @@ function main(){
   byId('dry-area').textContent=precision(dry)+' м²';
   byId('linoleum-area').textContent=precision(base)+' м²';
   byId('height').textContent=precision(APARTMENT_DIMENSIONS.ceilingHeightMm/1000,2)+' м';
+  drawFlooringCompare();
   const target=byId('dimension-rows');
   for(const room of rooms){
     const tr=create('tr',undefined,'dimension-row');
