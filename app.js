@@ -358,8 +358,23 @@ function cleanupUnselectedCatalog(data){
   );
   return {...data,catalogRevision:8,items};
 }
-function initial(){return cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()));}
-function mergeCatalog(data){return cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data)));}
+const DISC_ITEM={
+  id:'user-20261013-diamond-disc-125',
+  category:'Инструменты',room:'Общие',
+  name:'Алмазный диск для УШМ 125 мм',
+  spec:'Для штробления после уточнения материала стен. Совместимость с УШМ DEKO 125 мм: посадка, предельные обороты, кожух и пылеудаление. Марка и цена пока не выбраны.',
+  quantity:1,unit:'шт.',price:null,kind:'material',url:'',
+  priceApprox:false,quantityApprox:false,status:'Уточнить'
+};
+function includeDisc(data){
+  if(data.catalogRevision>=9)return data;
+  const existing=data.items.some(i=>i.id===DISC_ITEM.id||
+    (i.category==='Инструменты'&&/алмазн/i.test(i.name)&&/диск/i.test(i.name)&&/125/.test(i.name)));
+  return {...data,catalogRevision:9,
+    items:existing?data.items:[...data.items,{...DISC_ITEM}]};
+}
+function initial(){return includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())));}
+function mergeCatalog(data){return includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));}
 
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
