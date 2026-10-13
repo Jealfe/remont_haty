@@ -594,12 +594,23 @@ function withBedroomMechanismPrices(data){
   });
   return {...data,catalogRevision:16,items};
 }
+// Ревизия 17: подрозетники спальни по предварительной цене владельца 20 ₽/шт.
+// Материал перегородок пока неизвестен, глубину 45/60 мм не выбираем.
+function withBedroomBoxPrice(data){
+  if(data.catalogRevision>=17)return data;
+  const items=data.items.map(i=>{
+    if(i.id!=='bedroom-20261013-underboxes'||i.price!==null||i.status==='Куплено')return i;
+    const spec=i.spec.replace('Тип подрозетников и цена после выбора основания и механизмов.','Диаметр ориентировочно 68 мм; глубину (45 или 60 мм) выберем после замеров стен. Цена 20 ₽/шт. — предварительно задана владельцем.');
+    return {...i,price:20,priceApprox:true,spec};
+  });
+  return {...data,catalogRevision:17,items};
+}
 function initial(){
-  return withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())))))))));
+  return withBedroomBoxPrice(withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))))))))));
 }
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base)))))));
+  return withBedroomBoxPrice(withBedroomMechanismPrices(withBedroomElectricalPlan(withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base))))))));
 }
 
 function amount(i){
