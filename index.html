@@ -6,7 +6,7 @@
 <meta name="description" content="Короткая сводка покупок для ремонта квартиры: материалы, количество и цены.">
 <title>Ремонт Хаты — смета материалов</title>
 <link rel="stylesheet" href="styles.css?v=7">
-<script defer src="app.js?v=13"></script>
+<script defer src="app.js?v=14"></script>
 </head>
 <body>
 <header class="site-header">
@@ -75,6 +75,10 @@
   <label class="check"><input type="checkbox" name="quantityApprox">Количество приблизительное</label>
   <label>Цена за единицу, ₽<input name="price" inputmode="decimal" placeholder="Неизвестна"></label>
   <label class="check"><input type="checkbox" name="priceApprox" checked>Цена приблизительная</label>
+  <div class="form-grid">
+    <label>Магазин<input name="shop" maxlength="100" placeholder="Например, Ozon"></label>
+    <label>Статус<select name="status"></select></label>
+  </div>
   <p id="form-error" role="alert"></p>
   <div class="dialog-actions">
     <button id="delete-item" type="button" class="delete" hidden>Удалить</button>
