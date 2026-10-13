@@ -25,7 +25,8 @@ const APARTMENT_DIMENSIONS={
       note:'Малый санузел при спальне: душевая кабина Loranto 120×80, унитаз от застройщика, раковина предположительно тоже. Нужно запустить первым для переезда.'},
     {id:'bath2',name:'Санузел 2 · ванна',shape:'rectangle',lengthMm:2030,widthMm:3330,openings:[],
       note:'Большой основной санузел с ванной, тёплым полом, стиральной машиной, будущей сушильной машиной и бойлером. Полную отделку можно сделать позднее.'},
-    {id:'storage',name:'Кладовая / мини-офис',shape:'rectangle',lengthMm:2270,widthMm:1770,openings:[]},
+    {id:'storage',name:'Кладовая / мини-офис',shape:'rectangle',lengthMm:2270,widthMm:1770,openings:[],
+      note:'Подтверждено: тот же линолеум, что и во всех жилых помещениях. По предварительному раскрою вырезается из остатка коридорного отреза, без дополнительной закупки. Требуется проверка геометрии, направления рисунка и пригодности обрезка.'},
     {id:'hall',name:'Коридор (Г-образный)',shape:'L',openings:[],
       // Площадь по формуле пользователя: 5880×1100 + 2370×(3080−1100).
       first:{lengthMm:5880,widthMm:1100},
@@ -101,7 +102,7 @@ function drawFlooringCompare(){
   if(!roberta.allFit||!kasli.allFit)
     byId('floor-fit-note').textContent='ВНИМАНИЕ: одна из заготовок не помещается в выбранную ширину рулона. Требуется другой раскрой.';
   else
-    byId('floor-fit-note').textContent='*Кладовую предварительно можно выкроить из свободной части отреза Г-образного коридора, если фактическая форма совпадает с расчётной. Коридор можно вырезать цельной Г-образной деталью, без внутреннего шва.';
+    byId('floor-fit-note').textContent='*Кладовая 2,27×1,77 м тоже покрывается тем же линолеумом. В расчёте она предполагается из остатка от Г-образного коридора, без дополнительного отреза. Это возможно только при подходящих реальных размерах, геометрии и направлении рисунка; подтвердить раскрой до покупки.';
 }
 
 const precision=(n,digits=2)=>n.toLocaleString('ru-RU',{minimumFractionDigits:digits,maximumFractionDigits:digits});
@@ -116,7 +117,7 @@ function main(){
   const rooms=APARTMENT_DIMENSIONS.rooms;
   const total=rooms.reduce((s,r)=>s+squareMeters(r),0);
   const bathIds=new Set(['bath1','bath2']);
-  const linoleumRooms=new Set(['bedroom','kitchen','child1','child2','hall']);
+  const linoleumRooms=new Set(['bedroom','kitchen','child1','child2','hall','storage']);
   const dry=rooms.filter(r=>!bathIds.has(r.id)).reduce((s,r)=>s+squareMeters(r),0);
   const base=rooms.filter(r=>linoleumRooms.has(r.id)).reduce((s,r)=>s+squareMeters(r),0);
   byId('total-area').textContent=precision(total)+' м²';
