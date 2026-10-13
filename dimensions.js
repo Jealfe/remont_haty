@@ -60,9 +60,10 @@ function flooringCutPlan(option){
   const byName=new Map(APARTMENT_DIMENSIONS.rooms.map(r=>[r.id,r]));
   const cuts=['bedroom','kitchen','child1','child2'].map(id=>{
     const r=byName.get(id);
-    const cutLengthMm=Math.max(r.lengthMm,r.widthMm)+trim;
-    const cutAcrossMm=Math.min(r.lengthMm,r.widthMm)+trim;
-    return {id,name:r.name,cutLengthMm,cutAcrossMm,fit:cutAcrossMm<=option.rollWidthMm};
+    const usual={cutLengthMm:Math.max(r.lengthMm,r.widthMm)+trim,cutAcrossMm:Math.min(r.lengthMm,r.widthMm)+trim};
+    const alternative={cutLengthMm:Math.min(r.lengthMm,r.widthMm)+trim,cutAcrossMm:Math.max(r.lengthMm,r.widthMm)+trim};
+    const chosen=alternative.cutAcrossMm<=option.rollWidthMm?alternative:usual;
+    return {id,name:r.name,...chosen,fit:chosen.cutAcrossMm<=option.rollWidthMm};
   });
   const hall=byName.get('hall'),store=byName.get('storage');
   const hallCutLengthMm=hall.first.lengthMm+trim;
@@ -102,7 +103,7 @@ function drawFlooringCompare(){
   if(!roberta.allFit||!kasli.allFit)
     byId('floor-fit-note').textContent='ВНИМАНИЕ: одна из заготовок не помещается в выбранную ширину рулона. Требуется другой раскрой.';
   else
-    byId('floor-fit-note').textContent='*Кладовая 2,27×1,77 м тоже покрывается тем же линолеумом. В расчёте она предполагается из остатка от Г-образного коридора, без дополнительного отреза. Это возможно только при подходящих реальных размерах, геометрии и направлении рисунка; подтвердить раскрой до покупки.';
+    byId('floor-fit-note').textContent='*Кладовая 2,27×1,77 м тоже покрывается тем же линолеумом. В расчёте она предполагается из остатка от Г-образного коридора, без дополнительного отреза. Это возможно только при подходящих реальных размерах, геометрии; подтвердить раскрой до покупки.';
 }
 
 const precision=(n,digits=2)=>n.toLocaleString('ru-RU',{minimumFractionDigits:digits,maximumFractionDigits:digits});
