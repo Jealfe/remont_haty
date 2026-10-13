@@ -468,12 +468,77 @@ function withCeilingWiringEstimates(data){
   });
   return {...data,catalogRevision:13,items};
 }
+// Ревизия 14: явно названные товары и цены из обсуждения 13.10.2026.
+// Кандидаты ещё не куплены. В случае наличия пользовательского аналога
+// в локальной смете его данные сохраняем, дубликат не создаём.
+const AGREED_STAGE_SUPPLIES=[
+  {
+    id:'discussed-20261013-rule-2m',category:'Инструменты',
+    name:'Алюминиевое правило 2 м',
+    spec:'Лемана ПРО. Цена 700 ₽ со слов владельца. Для разметки и проверки плоскостей; это не пузырьковый уровень.',
+    quantity:1,unit:'шт.',price:700,shop:'Лемана ПРО',
+    stage:'Электрика',status:'Запланировано'
+  },
+  {
+    id:'discussed-20261013-eye-protection',category:'Инструменты',
+    name:'Защитные очки для строительных работ',
+    spec:'Ozon, цена 240 ₽ со слов владельца. При резке штроб и работе перфоратором необходима защита глаз.',
+    quantity:1,unit:'шт.',price:240,shop:'Ozon',
+    stage:'Электрика',status:'Запланировано'
+  },
+  {
+    id:'discussed-20261013-hearing-protection',category:'Инструменты',
+    name:'Защитные наушники',
+    spec:'Лемана ПРО, цена 300 ₽ со слов владельца. Для работы с УШМ и перфоратором.',
+    quantity:1,unit:'шт.',price:300,shop:'Лемана ПРО',
+    stage:'Электрика',status:'Запланировано'
+  },
+  {
+    id:'discussed-20261013-cable-ties',category:'Электрика',
+    name:'Кабельные стяжки 4,8×200 мм, 100 шт.',
+    spec:'Ozon, цена 170 ₽ по скриншоту. Упаковка 100 шт. Не путать с крепежом для фиксации кабелей непосредственно в штробах: его отдельно подберём.',
+    quantity:1,unit:'уп.',price:170,shop:'Ozon',
+    stage:'Электрика',status:'Запланировано'
+  },
+  {
+    id:'discussed-20261013-tie-platforms',category:'Электрика',
+    name:'Площадки REXANT для кабельных стяжек, 100 шт.',
+    spec:'Ozon, цена 224 ₽ по скриншоту. Размер 22×16 мм; упаковка 100 шт. Способ крепления и необходимость в выбранной схеме уточним.',
+    quantity:1,unit:'уп.',price:224,shop:'Ozon',
+    stage:'Электрика',status:'Запланировано'
+  },
+  {
+    id:'discussed-20261013-fugen-10kg',category:'Стены',
+    name:'Шпаклёвка КНАУФ Фуген, 10 кг',
+    spec:'Лемана ПРО, цена 420 ₽ со слов владельца. По карточке слой 0,2–5 мм. Кандидат для тонкого финишного выравнивания; не закладывать как основную смесь для глубоких штроб или установки подрозетников.',
+    quantity:1,unit:'мешок',price:420,shop:'Лемана ПРО',
+    stage:'Стены и обои',status:'Уточнить'
+  }
+];
+function withDiscussedSupplies(data){
+  if(data.catalogRevision>=14)return data;
+  const items=[...data.items];
+  const patterns=[
+    i=>/правил/i.test(i.name)&&/(^|\D)2(?:[,.]0)?\s*м(?:етра|етров)?(\D|$)/i.test(i.name),
+    i=>/очк/i.test(i.name)&&/защит|строит/i.test(i.name),
+    i=>/наушник/i.test(i.name)&&/защит|строит/i.test(i.name),
+    i=>/стяжк|хомут/i.test(i.name)&&/4[,.]8/.test(i.name)&&/200/.test(i.name),
+    i=>/площадк/i.test(i.name)&&/стяжк|кабел/i.test(i.name),
+    i=>/фуген|fugen/i.test(i.name)
+  ];
+  AGREED_STAGE_SUPPLIES.forEach((item,index)=>{
+    if(!items.some(i=>i.id===item.id||patterns[index](i)))items.push({
+      ...item,room:'Общие',kind:'material',url:'',priceApprox:false,quantityApprox:false
+    });
+  });
+  return {...data,catalogRevision:14,items};
+}
 function initial(){
-  return withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))))));
+  return withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())))))));
 }
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base))));
+  return withDiscussedSupplies(withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base)))));
 }
 
 function amount(i){
