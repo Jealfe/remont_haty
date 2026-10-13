@@ -1,6 +1,15 @@
 'use strict';
 const CATEGORIES=['Электрика','Освещение','Стены','Полы','Санузлы','Потолки','Двери','Инструменты','Прочее'];
 const STATUSES=['Уточнить','Запланировано','В корзине','Куплено'];
+const STAGES=['Электрика','Стены и обои','Полы','Санузлы','Потолки и освещение','Двери и завершение'];
+function inferStage(i){
+  if(i.category==='Инструменты'){
+    if(['ozon-202610-tilecutter-400','ozon-202610-mixer-sds'].includes(i.id))return 'Санузлы';
+    return 'Электрика';
+  }
+  return ({'Электрика':'Электрика','Стены':'Стены и обои','Полы':'Полы','Санузлы':'Санузлы','Потолки':'Потолки и освещение','Освещение':'Потолки и освещение','Двери':'Двери и завершение','Прочее':'Двери и завершение'})[i.category]||'Двери и завершение';
+}
+
 const KEY='remont-haty-v1', BACKUP=KEY+'-before-import';
 const money=new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:2});
 const number=new Intl.NumberFormat('ru-RU',{maximumFractionDigits:3});
@@ -242,7 +251,7 @@ function validate(data){
       if(typeof (k==='shop'?(i.shop??''):i[k])!=='string'||(k==='shop'?(i.shop??''):i[k]).length>max)throw Error('Некорректное поле: '+k);
     }
     if(!i.name.trim()||!i.unit.trim()||!CATEGORIES.includes(i.category)||!STATUSES.includes(i.status)||!['material','labor'].includes(i.kind)||typeof i.priceApprox!=='boolean'||typeof i.quantityApprox!=='boolean')throw Error('Некорректные параметры позиции.');
-    return {id:i.id,name:i.name.trim(),spec:i.spec,category:i.category,room:ROOMS.includes(i.room)?i.room:inferRoom(i),unit:i.unit.trim(),quantity:parseNum(i.quantity),price:parseNum(i.price),quantityApprox:i.quantityApprox,priceApprox:i.priceApprox,status:i.status,shop:i.shop??'',kind:i.kind,url:safeUrl(i.url)};
+    return {id:i.id,name:i.name.trim(),spec:i.spec,category:i.category,room:ROOMS.includes(i.room)?i.room:inferRoom(i),unit:i.unit.trim(),quantity:parseNum(i.quantity),price:parseNum(i.price),quantityApprox:i.quantityApprox,priceApprox:i.priceApprox,status:i.status,shop:i.shop??'',stage:STAGES.includes(i.stage)?i.stage:inferStage(i),kind:i.kind,url:safeUrl(i.url)};
   });
   return {version:1,catalogRevision:Number.isInteger(data.catalogRevision)?data.catalogRevision:0,updatedAt:new Date().toISOString(),items};
 }
@@ -417,12 +426,17 @@ function addConfirmedMarkingItems(data){
   }
   return {...data,catalogRevision:11,items};
 }
+// Ревизия 12: группируем позиции по этапам, не меняя цены, статусы и товары.
+function withStages(data){
+  if(data.catalogRevision>=12&&data.items.every(i=>STAGES.includes(i.stage)))return data;
+  return {...data,catalogRevision:12,items:data.items.map(i=>({...i,stage:STAGES.includes(i.stage)?i.stage:inferStage(i)}))};
+}
 function initial(){
-  return addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))));
+  return withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())))));
 }
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return addConfirmedMarkingItems(removePrematureDisc(base));
+  return withStages(addConfirmedMarkingItems(removePrematureDisc(base)));
 }
 
 function amount(i){
@@ -476,6 +490,7 @@ const expandedRooms=new Set();
 const expandedBundles=new Set();
 let viewMode='summary';
 let materialFilter='';
+let stageFilter='';
 function syncCategoryFilter(all){
   // Не показываем категории, в которых ещё нет согласованных товаров.
   const choices=[['','Все материалы']];
@@ -494,8 +509,9 @@ function nameOfRoom(room){return ROOM_PRESETS[room]||room;}
 function getFiltered(){
   const query=$('#search').value.trim().toLocaleLowerCase('ru');
   return materials().filter(i=>
-    (!materialFilter||(materialFilter===WIRES_FILTER?isWire(i):i.category===materialFilter))
-    &&(!query||[i.name,i.spec,i.category,i.room,nameOfRoom(i.room),i.shop||'',i.status].join(' ').toLocaleLowerCase('ru').includes(query))
+    (!stageFilter||i.stage===stageFilter)
+    &&(!materialFilter||(materialFilter===WIRES_FILTER?isWire(i):i.category===materialFilter))
+    &&(!query||[i.name,i.spec,i.category,i.room,nameOfRoom(i.room),i.shop||'',i.status,i.stage].join(' ').toLocaleLowerCase('ru').includes(query))
   );
 }
 function formatQuantity(item){
@@ -618,13 +634,39 @@ function renderRoomList(items){
     }
   }
 }
+function renderStageBudgets(all){
+  const target=$('#stage-budget-rows');
+  target.replaceChildren();
+  for(const stage of STAGES){
+    const items=all.filter(i=>i.stage===stage);
+    const known=items.filter(i=>amount(i)!==null);
+    const paid=items.filter(i=>i.status==='Куплено');
+    const pending=items.filter(i=>i.status!=='Куплено');
+    const missing=items.length-known.length;
+    const div=elem('div',undefined,'stage-budget-row');
+    div.append(elem('strong',stage,'stage-budget-name'));
+    const total=items.length?(known.length?money.format(sum(items))+(missing?' + ?':''):'Пока нет расчёта'):'Не заполнен';
+    div.append(elem('span',total,'stage-budget-cost'));
+    if(items.length){
+      div.append(elem('small','Куплено: '+money.format(sum(paid))+' · Осталось: '+money.format(sum(pending))+(missing?' · Без суммы: '+missing:'') ,'stage-budget-extra'));
+    }
+    target.append(div);
+  }
+}
 function render(){
   const all=materials();
   syncCategoryFilter(all);
   const filtered=getFiltered();
-  $('#total').textContent=money.format(sum(all.filter(i=>i.category!=='Инструменты')));
-  $('#tools-total').textContent=money.format(sum(all.filter(i=>i.category==='Инструменты')));
+  const paid=all.filter(i=>i.status==='Куплено');
+  const pending=all.filter(i=>i.status!=='Куплено');
+  $('#total').textContent=money.format(sum(all));
+  $('#paid-total').textContent=money.format(sum(paid));
+  $('#remaining-total').textContent=money.format(sum(pending));
+  renderStageBudgets(all);
   const unknown=all.filter(i=>amount(i)===null).length;
+  $('#budget-missing').textContent=unknown
+    ?'Пока не полный бюджет: '+unknown+' позиций без суммы. Невнесённые товары не учтены.'
+    :'Пока учтены только внесённые товары. Остальные добавим постепенно.';
   $('#unknown').textContent=unknown+' позиций без полной суммы';
   $('#section-total').textContent='По выборке: '+money.format(sum(filtered));
   $('#mode-summary').setAttribute('aria-pressed',String(viewMode==='summary'));
@@ -643,6 +685,8 @@ const form=$('#item-form');
 for(const c of CATEGORIES){const o=elem('option',c);o.value=c;form.elements.category.append(o);}
 for(const r of ROOMS){const o=elem('option',ROOM_PRESETS[r]||r);o.value=r;form.elements.room.append(o);}
 for(const status of STATUSES){const o=elem('option',status);o.value=status;form.elements.status.append(o);}
+for(const stage of STAGES){const o=elem('option',stage);o.value=stage;form.elements.stage.append(o);}
+for(const [value,label] of [['','Все этапы'],...STAGES.map(s=>[s,s])]){const o=elem('option',label);o.value=value;$('#stages').append(o);}
 function openEditor(item=null){
   editing=item?.id??null;form.reset();
   $('#form-error').textContent='';
@@ -650,6 +694,7 @@ function openEditor(item=null){
   $('#delete-item').hidden=!item;
   if(item){
     for(const k of ['name','spec','unit','category','room','price','quantity','shop','status'])form.elements[k].value=item[k]??'';
+    form.elements.stage.value=item.stage||inferStage(item);
     form.elements.priceApprox.checked=item.priceApprox;
     form.elements.quantityApprox.checked=item.quantityApprox;
   }else{
@@ -657,6 +702,7 @@ function openEditor(item=null){
     form.elements.room.value=activeRoom||'Общие';
     form.elements.unit.value='шт.';
     form.elements.status.value='Уточнить';
+    form.elements.stage.value=stageFilter||inferStage({category:form.elements.category.value});
     form.elements.priceApprox.checked=true;
   }
   $('#editor').showModal();form.elements.name.focus();
@@ -666,7 +712,7 @@ form.onsubmit=event=>{
   try{
     const prior=state.items.find(i=>i.id===editing);
     const item=prior?{...prior}:{id:'item-'+Date.now()+'-'+Math.random().toString(36).slice(2),kind:'material',status:'Уточнить',url:''};
-    for(const k of ['name','spec','category','room','unit','shop','status'])item[k]=form.elements[k].value.trim();
+    for(const k of ['name','spec','category','room','unit','shop','status','stage'])item[k]=form.elements[k].value.trim();
     for(const k of ['quantity','price'])item[k]=parseNum(form.elements[k].value.trim());
     for(const k of ['quantityApprox','priceApprox'])item[k]=form.elements[k].checked;
     const next=validate({...state,items:editing?state.items.map(i=>i.id===editing?item:i):[...state.items,item]});
@@ -677,6 +723,7 @@ $('#add').onclick=()=>openEditor();
 $('#close').onclick=$('#cancel').onclick=()=>$('#editor').close();
 $('#search').oninput=render;
 $('#categories').onchange=()=>{materialFilter=$('#categories').value;render();};
+$('#stages').onchange=()=>{stageFilter=$('#stages').value;render();};
 $('#export').onclick=()=>{
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
