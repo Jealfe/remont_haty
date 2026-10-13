@@ -187,7 +187,22 @@ function questionnaireRevision(data){
  }
  return {...data,catalogRevision:4,items};
 }
-function initial(){return questionnaireRevision(initialRev3());}
+
+function reviseKasliWidth(data){
+  if(data.catalogRevision>=5)return data;
+  const items=data.items.map(i=>{
+    if(i.id==='initial-27'
+      &&i.name==='Линолеум Kreaforta «Касли» арт. 89441400'
+      &&i.price===915
+      &&i.spec==='Рулон 4 м; толщина 4,6 мм; защитный слой 0,4 мм; класс 32. Один декор во всех жилых комнатах и коридоре. Сравнить с вариантом шириной 3,5 м по отходам; объём после замеров.'){
+      return {...i,name:'Линолеум Kreaforta «Касли» 4 м (арт. 89441404 — проверить)',spec:'Для ширины 4 м в каталоге арт. 89441404; исходно был указан 89441400, но это артикул рулона 3 м. Толщина 4,6 мм, слой 0,4 мм, класс 32. Цена 915 ₽/м². Проверить артикул в корзине, сравнить раскрой с вариантом шириной 3,5 м.'};
+    }
+    return i;
+  });
+  return {...data,catalogRevision:5,items};
+}
+function initial(){return reviseKasliWidth(questionnaireRevision(initialRev3()));}
+
 
 function parseNum(value){
   if(value===null||value==='')return null;
@@ -219,8 +234,9 @@ function validate(data){
   return {version:1,catalogRevision:Number.isInteger(data.catalogRevision)?data.catalogRevision:0,updatedAt:new Date().toISOString(),items};
 }
 function mergeCatalog(data){
-  if(data.catalogRevision>=4)return data;
-  if(data.catalogRevision===3)return questionnaireRevision(data);
+  if(data.catalogRevision>=5)return data;
+  if(data.catalogRevision===4)return reviseKasliWidth(data);
+  if(data.catalogRevision===3)return reviseKasliWidth(questionnaireRevision(data));
   const items=data.items.map(maybeUpdateColdWeld);
   const seenIds=new Set(items.map(i=>i.id));
   const seenNames=new Set(items.map(i=>[i.room,i.category,i.name].join('|').toLocaleLowerCase('ru')));
@@ -233,7 +249,7 @@ function mergeCatalog(data){
   };
   if(data.catalogRevision<2){baseInitial();addMissing(additions());}
   addMissing(toolAdditions());
-  return questionnaireRevision({...data,catalogRevision:3,items});
+  return reviseKasliWidth(questionnaireRevision({...data,catalogRevision:3,items}));
 }
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
