@@ -1,5 +1,5 @@
 'use strict';
-// Ревизия 29. В сводке материалы объединяются по виду, не по названию комнаты.
+// Ревизия 30. В сводке материалы объединяются по виду, не по названию комнаты.
 // Комната и подробное назначение остаются в полях room/spec.
 // Переименовываются ТОЛЬКО прежние служебные наименования, вручную изменённые записи не трогаем.
 (function(){
@@ -12,13 +12,17 @@ const standard=[
  [/^Вытяжной вентилятор — (?:малый|большой) санузел$/i,'Вытяжной вентилятор'],
  [/^Потолочный светильник — (?:прихожая|малый санузел|мини-кабинет)$/i,'Потолочный светильник'],
  [/^Настенные светильники — длинный коридор$/i,'Настенный светильник'],
- [/^Кнопка без фиксации — вытяжка большого санузла$/i,'Кнопка без фиксации']
+ [/^Кнопка без фиксации — вытяжка большого санузла$/i,'Кнопка без фиксации'],
+ [/^Терморегулятор тёплого пола — большой санузел$/i,'Терморегулятор тёплого пола'],
+ [/^Нагревательный мат — большой санузел$/i,'Нагревательный мат'],
+ [/^Световые линии — два уголка большого санузла$/i,'Световые линии (уголки)']
 ];
 const allowed=/^(?:bedroom-|kitchen-|child[12]-|hall-|bath[12]-|office-)/;
 const oneOff={
  'questionnaire-20261013-bed-spots':['Точечные светильники спальни','Точечный светильник'],
  'initial-66':['Основной свет детской','Потолочный светильник'],
- 'initial-67':['Основной свет второй детской','Потолочный светильник']
+ 'initial-67':['Основной свет второй детской','Потолочный светильник'],
+ 'lighting-bed-line':['Спальня: комплект световой линии около 2 м','Комплект световой линии 2 м']
 };
 function normalized(i){
  const exception=oneOff[i.id];
@@ -28,15 +32,33 @@ function normalized(i){
  return i.name;
 }
 function upgrade(data){
- if(data.catalogRevision>=29)return data;
+ if(data.catalogRevision>=30)return data;
  const items=data.items.map(item=>{
    const name=normalized(item);
    return name===item.name?item:{...item,name};
  });
- return {...data,catalogRevision:29,items};
+ return {...data,catalogRevision:30,items};
 }
 const previousMerge=mergeCatalog;mergeCatalog=data=>upgrade(previousMerge(data));
 const previousInitial=initial;initial=()=>upgrade(previousInitial());
+
+// Два трековых комплекта разных зон одной кухни-гостиной показываем
+// одной строкой только в «Сводке». В «По комнатам» названия зон остаются.
+const originalBundleKey=bundleKey;
+bundleKey=function(i){
+ if(i.id==='lighting-kitchen-track'||i.id==='lighting-sofa-track')
+   return [i.category,'комплект трекового освещения',i.unit.trim().toLocaleLowerCase('ru')].join('§');
+ return originalBundleKey(i);
+};
+const originalBundleRow=bundleRow;
+bundleRow=function(items){
+ const rows=originalBundleRow(items);
+ if(items.length>1&&items.every(i=>i.id==='lighting-kitchen-track'||i.id==='lighting-sofa-track')){
+   const label=rows[0].querySelector('.aggregate-button span:last-child');
+   if(label)label.textContent='Комплект трекового освещения';
+ }
+ return rows;
+};
 
 // Если у одного вида материала разные цены (например, у светильников),
 // показываем диапазон вместо непонятного «разная / ?».
@@ -61,6 +83,6 @@ headerRow=function(label,items,expanded,onclick,kind){
  }
  return row;
 };
-if(state.catalogRevision<29)commit(upgrade(state));
+if(state.catalogRevision<30)commit(upgrade(state));
 else render();
 })();
