@@ -304,8 +304,62 @@ function correctBathroomNumbers(data){
   });
   return {...data,catalogRevision:7,items:corrected};
 }
-function initial(){return correctBathroomNumbers(initialPrior());}
-function mergeCatalog(data){return correctBathroomNumbers(mergeCatalogPrior(data));}
+
+/*
+ * По просьбе владельца, ревизия 8: в смете только явно обсуждённые/
+ * выбранные товары. Черновые предложения ассистента не входят в список.
+ * План работ и невыбранные системы остаются на странице размеров/в README.
+ *
+ * Из ранее созданных позиций не удаляем строки, которые пользователь
+ * действительно изменил, и никогда не удаляем им созданные вручную строки.
+ * Это важно для локальных данных из старых версий.
+ */
+const USER_REQUESTED_IDS=new Set([
+  // Варианты кабельных линий и интернет-кабель, заданные для будущего расчёта.
+  'initial-1','initial-2','initial-3','initial-4','initial-13',
+  // Обсуждаемые покрытия и конкретный тюбик холодной сварки из корзины.
+  'initial-27','initial-29',
+  // Пустая ванна по прямой просьбе владельца. Модель выберем отдельно.
+  'initial-52',
+  // По одному светильнику ~5000 руб. для каждой детской.
+  'initial-66','initial-67',
+  // Конкретные товары с предоставленного скриншота корзины.
+  'ozon-202610-grinder-deko',
+  'ozon-202610-tilecutter-400',
+  'ozon-202610-vacuum-rekidel',
+  'ozon-202610-mixer-sds',
+  'ozon-202610-gloves-pack',
+  'ozon-202610-film-54',
+  'ozon-202610-mask-6001',
+  // Выбранная душевая, конкретные обои и 6 запланированных точечных светильников.
+  'questionnaire-20261013-loranto',
+  'questionnaire-20261013-bed-wall-38209',
+  'questionnaire-20261013-bed-wall-38109',
+  'questionnaire-20261013-kitchen-wall',
+  'questionnaire-20261013-hall-wall',
+  'questionnaire-20261013-bed-spots'
+]);
+const AUTO_CREATED_BASELINE=new Map(
+  correctBathroomNumbers(initialPrior()).items.map(i=>[i.id,i])
+);
+const USER_EDITABLE_FIELDS=[
+  'name','spec','quantity','unit','price','category','room',
+  'priceApprox','quantityApprox','kind','status','url'
+];
+function userHasEditedAutoItem(item){
+  const baseline=AUTO_CREATED_BASELINE.get(item.id);
+  if(!baseline)return true; // любые самостоятельно добавленные позиции сохраняются
+  return USER_EDITABLE_FIELDS.some(k=>item[k]!==baseline[k]);
+}
+function cleanupUnselectedCatalog(data){
+  if(data.catalogRevision>=8)return data;
+  const items=data.items.filter(i=>
+    USER_REQUESTED_IDS.has(i.id)||userHasEditedAutoItem(i)
+  );
+  return {...data,catalogRevision:8,items};
+}
+function initial(){return cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()));}
+function mergeCatalog(data){return cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data)));}
 
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
