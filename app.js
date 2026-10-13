@@ -100,9 +100,34 @@ function additions(){
     inRoom('Санузел 1','Санузлы','Манжеты для гидроизоляции выводов','Количество после проверки труб и системы гидроизоляции.',null,'шт.',null)
   ];
 }
+
+function selectedFromCart(id,name,spec,quantity,unit,price,category='Инструменты'){
+  return {id:'ozon-202610-'+id,name,spec,quantity,unit,price,category,room:'Общие',kind:'material',url:'',status:'Уточнить',priceApprox:true,quantityApprox:false};
+}
+function toolAdditions(){
+  return [
+    selectedFromCart('grinder-deko','УШМ DEKO 125 мм, 1250 Вт','Кандидат из корзины Ozon; проверить комплектацию и возможность работы с нужными дисками.',1,'шт.',2356),
+    selectedFromCart('tilecutter-400','Ручной плиткорез Tiler 400 мм','Кандидат из корзины. Пока не покупать: может оказаться коротким для выбранного формата плитки.',1,'шт.',1980),
+    selectedFromCart('vacuum-rekidel','Строительный пылесос Rekidel 20 л','Кандидат из корзины. Для штробления требуется проверить тип фильтра и пригодность для мелкой строительной пыли.',1,'шт.',3806),
+    selectedFromCart('mixer-sds','Миксер-насадка Вихрь SDS+ 600×100 мм','Кандидат из корзины. Перед покупкой проверить совместимость хвостовика с инструментом и смесью.',1,'шт.',555),
+    selectedFromCart('gloves-pack','Рабочие перчатки, упаковка 10 пар','Предварительно выбранная упаковка 10 пар из корзины Ozon.',1,'уп.',205),
+    selectedFromCart('film-54','Защитная плёнка для ремонта, 54 м²','Кандидат из корзины; фактическую площадь и толщину плёнки проверить.',1,'рулон',296),
+    selectedFromCart('mask-6001','Полумаска с фильтрами типа 6001','Пока не покупать для бетонной пыли без совместимых фильтров P2/P3: картриджи 6001 обычно для органических паров.',1,'шт.',739)
+  ];
+}
+const COLD_WELD_SPEC='Кандидат из корзины: Homakoll S401, 60 мл, 507 ₽. Уточнить тип линолеума, основу и совместимость холодной сварки до покупки.';
+function maybeUpdateColdWeld(i){
+  if(i.id==='initial-29'&&i.name==='Холодная сварка стыков'
+    &&i.quantity===null&&i.price===650
+    &&i.spec==='Тип под выбранный линолеум и шов. Длина стыков пока неизвестна.'){
+    return {...i,quantity:1,price:507,priceApprox:true,spec:COLD_WELD_SPEC};
+  }
+  return i;
+}
+
 function initial(){
   const raw=baseInitial();
-  return {...raw,catalogRevision:2,items:[...raw.items.filter(i=>i.kind==='material'&&!NON_MATERIALS.has(i.name)).map(i=>({...i,room:inferRoom(i)})),...additions()]};
+  return {...raw,catalogRevision:3,items:[...raw.items.filter(i=>i.kind==='material'&&!NON_MATERIALS.has(i.name)).map(i=>maybeUpdateColdWeld({...i,room:inferRoom(i)})),...additions(),...toolAdditions()]};
 }
 function parseNum(value){
   if(value===null||value==='')return null;
@@ -134,13 +159,20 @@ function validate(data){
   return {version:1,catalogRevision:Number.isInteger(data.catalogRevision)?data.catalogRevision:0,updatedAt:new Date().toISOString(),items};
 }
 function mergeCatalog(data){
-  if(data.catalogRevision>=2)return data;
-  // Старые строки пользователя остаются нетронутыми, добавляем только новые.
-  const existingIds=new Set(data.items.map(i=>i.id));
-  const existingNames=new Set(data.items.map(i=>[i.room,i.category,i.name].join('|').toLocaleLowerCase('ru')));
-  baseInitial(); // Сброс счётчика, чтобы дополнительные позиции имели стабильные ID.
-  const extra=additions().filter(i=>!existingIds.has(i.id)&&!existingNames.has([i.room,i.category,i.name].join('|').toLocaleLowerCase('ru')));
-  return {...data,catalogRevision:2,items:[...data.items,...extra]};
+  if(data.catalogRevision>=3)return data;
+  const items=data.items.map(maybeUpdateColdWeld);
+  const seenIds=new Set(items.map(i=>i.id));
+  const seenNames=new Set(items.map(i=>[i.room,i.category,i.name].join('|').toLocaleLowerCase('ru')));
+  const addMissing=list=>{
+    for(const i of list){
+      const key=[i.room,i.category,i.name].join('|').toLocaleLowerCase('ru');
+      if(seenIds.has(i.id)||seenNames.has(key))continue;
+      items.push(i);seenIds.add(i.id);seenNames.add(key);
+    }
+  };
+  if(data.catalogRevision<2){baseInitial();addMissing(additions());}
+  addMissing(toolAdditions());
+  return {...data,catalogRevision:3,items};
 }
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
@@ -323,7 +355,8 @@ function renderRoomList(items){
 function render(){
   const all=materials();
   const filtered=getFiltered();
-  $('#total').textContent=money.format(sum(all));
+  $('#total').textContent=money.format(sum(all.filter(i=>i.category!=='Инструменты')));
+  $('#tools-total').textContent=money.format(sum(all.filter(i=>i.category==='Инструменты')));
   const unknown=all.filter(i=>amount(i)===null).length;
   $('#unknown').textContent=unknown+' позиций без полной суммы';
   $('#section-total').textContent='По выборке: '+money.format(sum(filtered));
