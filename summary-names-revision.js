@@ -38,6 +38,19 @@ function upgrade(data){
 const previousMerge=mergeCatalog;mergeCatalog=data=>upgrade(previousMerge(data));
 const previousInitial=initial;initial=()=>upgrade(previousInitial());
 
+// Если у одного вида материала разные цены (например, у светильников),
+// показываем диапазон вместо непонятного «разная / ?».
+const originalAggregate=aggregate;
+aggregate=function(items){
+ const result=originalAggregate(items);
+ const prices=items.map(i=>i.price);
+ if(prices.length>1&&prices.every(p=>p!==null)){
+   const lo=Math.min(...prices),hi=Math.max(...prices);
+   if(lo!==hi)result.price=(items.some(i=>i.priceApprox)?'≈ ':'')+number.format(lo)+'–'+number.format(hi)+' ₽';
+ }
+ return result;
+};
+
 // Вместо "33 поз." в сводке показываем, сколько видов материалов реально видно.
 const previousHeaderRow=headerRow;
 headerRow=function(label,items,expanded,onclick,kind){
