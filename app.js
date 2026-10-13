@@ -125,10 +125,70 @@ function maybeUpdateColdWeld(i){
   return i;
 }
 
-function initial(){
+function initialRev3(){
   const raw=baseInitial();
   return {...raw,catalogRevision:3,items:[...raw.items.filter(i=>i.kind==='material'&&!NON_MATERIALS.has(i.name)).map(i=>maybeUpdateColdWeld({...i,room:inferRoom(i)})),...additions(),...toolAdditions()]};
 }
+
+function questionnaireItem(id,room,category,name,spec,quantity,unit,price){
+  return {id:'questionnaire-20261013-'+id,room,category,name,spec,quantity,unit,price,kind:'material',status:'Уточнить',url:'',priceApprox:price!==null,quantityApprox:false};
+}
+function questionnaireItems(){
+  const q=questionnaireItem;
+  return [
+    q('loranto','Санузел 2','Санузлы','Душевая кабина Loranto 120×80','Выбрана в «КрасАква», 31 490 ₽. Для временно работающего санузла; комплектацию и слив проверить до заказа.',1,'шт.',31490),
+    q('bed-wall-38209','Спальня','Стены','Обои Лана Зел арт. 38209-05','1,06×10 м; один из двух артикулов спальни. Количество после замеров; 1 290 ₽/рулон по опроснику.',null,'рулон',1290),
+    q('bed-wall-38109','Спальня','Стены','Обои арт. 38109-05','Второй артикул спальни, предположительно 1,06×10 м. Цена 1 290 ₽ указана общей строкой для двух рисунков — уточнить для этого артикула.',null,'рулон',1290),
+    q('child-wall-1','Комната 2','Стены','Обои детская 1 — пока не выбраны','Цена 1 500 ₽/рулон ориентировочная, модель и ширина не определены.',null,'рулон',1500),
+    q('child-wall-2','Комната 3','Стены','Обои детская 2 — пока не выбраны','Цена 1 500 ₽/рулон ориентировочная, модель и ширина не определены.',null,'рулон',1500),
+    q('kitchen-wall','Кухня','Стены','Обои арт. 9294-17','Рулон 1,06×10 м, рисунок без подгонки по опроснику.',null,'рулон',2300),
+    q('hall-wall','Коридор','Стены','Обои арт. 60977-04','Рулон 1,06×10 м; количество рассчитать после замеров.',null,'рулон',2500),
+    q('bed-spots','Спальня','Освещение','Точечные светильники спальни','Шесть штук: 2 ряда по 3. Модель и световой поток пока неизвестны; учитывать вместе с одной световой линией 2 м.',6,'шт.',null)
+  ];
+}
+const questionnaireChanges={
+ 'initial-15':{name:'COB-лента для спальни',qty:6,price:700,match:'Две линии по 3 м',change:{quantity:2,price:null,spec:'Одна световая линия 2 м, COB 24 В, 3000 K, CRI ≥90, ориентир 800–1000 лм/м. Конкретная лента и цена не выбраны; расчёт света совместно с 6 точечными.'}},
+ 'initial-16':{name:'Встраиваемый алюминиевый профиль',qty:6,price:1200,match:'две линии по 3 м',change:{quantity:2,price:null,spec:'Профиль для одной линии 2 м в натяжном потолке; модель и цена пока неизвестны. Учесть рассеиватель.'}},
+ 'initial-17':{name:'Рассеиватель',qty:6,price:250,match:'Под выбранный профиль',change:{quantity:2,price:null,spec:'На одну линию 2 м; не считать отдельно, если рассеиватель входит в профиль.'}},
+ 'initial-18':{name:'Блок питания 24 В',qty:1,price:3000,match:'Мощность после выбора',change:{price:null,spec:'Подобрать после выбора двухметровой ленты; проверить запас мощности и место доступа.'}},
+ 'initial-19':{name:'Диммер для ленты 24 В',qty:1,price:2500,match:'Совместимость с блоком',change:{quantity:null,price:null,spec:'Пока неизвестно, будет ли диммер. Оставлено для возможного выбора.'}},
+ 'initial-27':{name:'Линолеум',qty:null,price:1100,match:'Класс и защитный слой',change:{name:'Линолеум Kreaforta «Касли» арт. 89441400',price:915,spec:'Рулон 4 м; толщина 4,6 мм; защитный слой 0,4 мм; класс 32. Один декор во всех жилых комнатах и коридоре. Сравнить с вариантом шириной 3,5 м по отходам; объём после замеров.'}},
+ 'initial-66':{name:'Основной свет детской',qty:null,price:null,match:'Примерно 12 м²',change:{quantity:1,price:5000,spec:'Один центральный светильник в детскую ~12 м². Цена около 5 000 ₽ — предварительная, модель и световой поток ещё не выбраны.'}},
+ 'initial-67':{name:'Основной свет второй детской',qty:null,price:null,match:'Примерно 12 м²',change:{quantity:1,price:5000,spec:'Один центральный светильник в детскую ~12 м². Цена около 5 000 ₽ — предварительная, модель и световой поток ещё не выбраны.'}}
+};
+function questionnaireCleanup(i){
+ const d=questionnaireChanges[i.id];
+ if(d&&i.name===d.name&&i.quantity===d.qty&&i.price===d.price&&i.spec.includes(d.match)){
+   const out={...i,...d.change};
+   if(d.change.price===null)out.priceApprox=false;
+   return out;
+ }
+ if(i.id==='initial-64'&&i.name==='Основное освещение кухни'&&i.spec==='Световой план и световой поток после расстановки мебели.')
+   return {...i,spec:'Планируется светильник-планка с несколькими направленными плафонами. Модель, количество и цена позже.'};
+ return i;
+}
+function questionnaireObsolete(i){
+ if(i.id==='initial-22'&&i.name==='Обои'&&i.quantity===null&&i.price===2500&&i.spec==='Основная отделка. Рулон 1,06×10 м как ориентир; подрезка и раппорт после выбора.')return true;
+ if(i.id==='initial-40'&&i.name==='Сантехника и смесители'&&i.quantity===null&&i.price===null&&i.spec==='Ванна, унитазы, раковины, смесители, сифоны. Разбить на позиции после выбора моделей.')return true;
+ if(i.id==='initial-21'&&i.name==='Остальные светильники'&&i.quantity===null&&i.price===null)return true;
+ const supplied={'initial-59':['Унитаз','Модель, выпуск и способ монтажа уточнить.'],'initial-60':['Раковина','Необходимость и габариты уточнить по плану.'],'initial-61':['Смеситель раковины','Только если планируется раковина.'],'initial-62':['Сифон раковины','Только если планируется раковина.']};
+ const x=supplied[i.id];
+ return Boolean(x&&i.room==='Санузел 2'&&i.name===x[0]&&i.spec===x[1]&&i.quantity===null&&i.price===null);
+}
+function questionnaireRevision(data){
+ if(data.catalogRevision>=4)return data;
+ const items=data.items.filter(i=>!questionnaireObsolete(i)).map(questionnaireCleanup);
+ const ids=new Set(items.map(i=>i.id));
+ const names=new Set(items.map(i=>[i.room,i.category,i.name].join('|').toLowerCase()));
+ for(const i of questionnaireItems()){
+   const key=[i.room,i.category,i.name].join('|').toLowerCase();
+   if(ids.has(i.id)||names.has(key))continue;
+   items.push(i);ids.add(i.id);names.add(key);
+ }
+ return {...data,catalogRevision:4,items};
+}
+function initial(){return questionnaireRevision(initialRev3());}
+
 function parseNum(value){
   if(value===null||value==='')return null;
   if(typeof value==='number'){
@@ -159,7 +219,8 @@ function validate(data){
   return {version:1,catalogRevision:Number.isInteger(data.catalogRevision)?data.catalogRevision:0,updatedAt:new Date().toISOString(),items};
 }
 function mergeCatalog(data){
-  if(data.catalogRevision>=3)return data;
+  if(data.catalogRevision>=4)return data;
+  if(data.catalogRevision===3)return questionnaireRevision(data);
   const items=data.items.map(maybeUpdateColdWeld);
   const seenIds=new Set(items.map(i=>i.id));
   const seenNames=new Set(items.map(i=>[i.room,i.category,i.name].join('|').toLocaleLowerCase('ru')));
@@ -172,7 +233,7 @@ function mergeCatalog(data){
   };
   if(data.catalogRevision<2){baseInitial();addMissing(additions());}
   addMissing(toolAdditions());
-  return {...data,catalogRevision:3,items};
+  return questionnaireRevision({...data,catalogRevision:3,items});
 }
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
