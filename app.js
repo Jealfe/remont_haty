@@ -62,8 +62,8 @@ seed('Прочее','Вывоз строительного мусора','Кол
 
 const ROOMS=['Кухня','Спальня','Комната 2','Комната 3','Санузел 1','Санузел 2','Коридор','Кладовая','Общие'];
 const ROOM_PRESETS={
-  'Санузел 1':'Ванная',
-  'Санузел 2':'Второй санузел',
+  'Санузел 1':'Санузел 1 · душ',
+  'Санузел 2':'Санузел 2 · ванна',
   'Комната 2':'Детская / комната 2',
   'Комната 3':'Детская / комната 3'
 };
@@ -71,7 +71,7 @@ const MIGRATION_BACKUP=KEY+'-before-rooms';
 const NON_MATERIALS=new Set(['Аренда штробореза и пылесоса','Доставка материалов','Вывоз строительного мусора']);
 function inferRoom(item){
   if(item.category==='Освещение'&&['COB-лента для спальни','Встраиваемый алюминиевый профиль','Рассеиватель','Блок питания 24 В','Диммер для ленты 24 В'].includes(item.name))return 'Спальня';
-  if(item.category==='Санузлы'&&['Нагревательный мат','Программируемый терморегулятор'].includes(item.name))return 'Санузел 1';
+  if(item.category==='Санузлы'&&['Нагревательный мат','Программируемый терморегулятор'].includes(item.name))return 'Санузел 2';
   return 'Общие';
 }
 function inRoom(room,category,name,spec,quantity=null,unit='шт.',price=null){
@@ -213,7 +213,7 @@ function markWallpaperCombination(data){
     Object.hasOwn(expected,i.id)&&i.spec===expected[i.id]?{...i,spec:i.spec+note}:i
   )};
 }
-function initial(){return markWallpaperCombination(reviseKasliWidth(questionnaireRevision(initialRev3())));}
+function initialPrior(){return markWallpaperCombination(reviseKasliWidth(questionnaireRevision(initialRev3())));}
 
 
 
@@ -246,7 +246,7 @@ function validate(data){
   });
   return {version:1,catalogRevision:Number.isInteger(data.catalogRevision)?data.catalogRevision:0,updatedAt:new Date().toISOString(),items};
 }
-function mergeCatalog(data){
+function mergeCatalogPrior(data){
   if(data.catalogRevision>=6)return data;
   if(data.catalogRevision===5)return markWallpaperCombination(data);
   if(data.catalogRevision===4)return markWallpaperCombination(reviseKasliWidth(data));
@@ -265,6 +265,48 @@ function mergeCatalog(data){
   addMissing(toolAdditions());
   return markWallpaperCombination(reviseKasliWidth(questionnaireRevision({...data,catalogRevision:3,items})));
 }
+
+/*
+ * Исправление нумерации после подтверждения владельцем 13.10.2026:
+ * Санузел 1 (1,75×2,87 м) — МАЛЫЙ с душевой кабиной,
+ * Санузел 2 (2,03×3,33 м) — БОЛЬШОЙ с ванной и тёплым полом.
+ * Меняем только известные позиции прежнего каталога. Произвольные
+ * добавленные пользователем товары не переносим, чтобы не угадать неверно.
+ * Количество, цена, название и прочие данные сохраняются.
+ */
+const BATHROOM_REASSIGN={
+  'initial-33':'Санузел 2', // нагревательный мат
+  'initial-34':'Санузел 2', // терморегулятор
+  'initial-52':'Санузел 2', // ванна
+  'initial-53':'Санузел 2', // слив-перелив
+  'initial-54':'Санузел 2', // смеситель ванны
+  'initial-55':'Санузел 2', // раковина
+  'initial-56':'Санузел 2', // смеситель раковины
+  'initial-57':'Санузел 2', // сифон
+  'initial-58':'Санузел 2', // унитаз
+  'initial-63':'Санузел 2', // герметик
+  'initial-70':'Санузел 2', // гидроизоляционные манжеты
+  'initial-59':'Санузел 1', // типовой унитаз старого малого санузла, если остался с правками
+  'initial-60':'Санузел 1', // раковина старого малого санузла
+  'initial-61':'Санузел 1', // смеситель малого санузла
+  'initial-62':'Санузел 1', // сифон малого санузла
+  'questionnaire-20261013-loranto':'Санузел 1' // душевая кабина
+};
+function correctBathroomNumbers(data){
+  if(data.catalogRevision>=7)return data;
+  const corrected=data.items.map(i=>{
+    const target=BATHROOM_REASSIGN[i.id];
+    if(!target)return i;
+    const other=target==='Санузел 1'?'Санузел 2':'Санузел 1';
+    // Если пользователь вручную назначил иной раздел, не трогаем.
+    if(i.room!==other&&i.room!=='Общие')return i;
+    return {...i,room:target};
+  });
+  return {...data,catalogRevision:7,items:corrected};
+}
+function initial(){return correctBathroomNumbers(initialPrior());}
+function mergeCatalog(data){return correctBathroomNumbers(mergeCatalogPrior(data));}
+
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
 }
