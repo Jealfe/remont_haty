@@ -21,8 +21,10 @@ const APARTMENT_DIMENSIONS={
       openings:[{kind:'Окно',widthMm:1830},{kind:'Дверной проём',widthMm:800}]},
     {id:'child2',name:'Детская 2',shape:'rectangle',lengthMm:3870,widthMm:3350,
       openings:[{kind:'Окно',widthMm:1440},{kind:'Дверной проём',widthMm:800}]},
-    {id:'bath1',name:'Санузел 1',shape:'rectangle',lengthMm:1750,widthMm:2870,openings:[]},
-    {id:'bath2',name:'Санузел 2',shape:'rectangle',lengthMm:2030,widthMm:3330,openings:[]},
+    {id:'bath1',name:'Санузел 1 · душ',shape:'rectangle',lengthMm:1750,widthMm:2870,openings:[],
+      note:'Малый санузел при спальне: душевая кабина Loranto 120×80, унитаз от застройщика, раковина предположительно тоже. Нужно запустить первым для переезда.'},
+    {id:'bath2',name:'Санузел 2 · ванна',shape:'rectangle',lengthMm:2030,widthMm:3330,openings:[],
+      note:'Большой основной санузел с ванной, тёплым полом, стиральной машиной, будущей сушильной машиной и бойлером. Полную отделку можно сделать позднее.'},
     {id:'storage',name:'Кладовая / мини-офис',shape:'rectangle',lengthMm:2270,widthMm:1770,openings:[]},
     {id:'hall',name:'Коридор (Г-образный)',shape:'L',openings:[],
       // Площадь по формуле пользователя: 5880×1100 + 2370×(3080−1100).
