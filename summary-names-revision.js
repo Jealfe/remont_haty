@@ -42,6 +42,31 @@ function upgrade(data){
 const previousMerge=mergeCatalog;mergeCatalog=data=>upgrade(previousMerge(data));
 const previousInitial=initial;initial=()=>upgrade(previousInitial());
 
+// Точный фильтр: «Кабельные стяжки» и крепёж НЕ являются проводами.
+// Старое isWire объявлено как const, его нельзя переназначать.
+const actualWire=item=>/^(?:кабель|интернет-кабель|провод|ввг|пвс|шввп|utp|ftp)(?:\s|$|[-–(])/i.test(item.name||'');
+const oldGetFiltered=getFiltered;
+getFiltered=function(){
+ const list=oldGetFiltered();
+ return materialFilter===WIRES_FILTER?list.filter(actualWire):list;
+};
+renderSummary=function(items){
+ const groups=new Map();
+ for(const item of items){
+  const section=actualWire(item)?'Кабели и провода':item.category;
+  if(!groups.has(section))groups.set(section,[]);
+  groups.get(section).push(item);
+ }
+ for(const section of sectionOrder){
+  const group=groups.get(section);
+  if(!group||!group.length)continue;
+  const expanded=forceExpand()||expandedSummary.has(section);
+  const toggle=()=>{if(expandedSummary.has(section))expandedSummary.delete(section);else expandedSummary.add(section);render();};
+  $('#rows').append(headerRow(section,group,expanded,toggle,'summary-group'));
+  if(expanded)for(const bundle of groupedMaterials(group))for(const row of bundleRow(bundle))$('#rows').append(row);
+ }
+};
+
 // Два трековых комплекта разных зон одной кухни-гостиной показываем
 // одной строкой только в «Сводке». В «По комнатам» названия зон остаются.
 const originalBundleKey=bundleKey;
