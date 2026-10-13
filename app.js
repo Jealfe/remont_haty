@@ -431,12 +431,49 @@ function withStages(data){
   if(data.catalogRevision>=12&&data.items.every(i=>STAGES.includes(i.stage)))return data;
   return {...data,catalogRevision:12,items:data.items.map(i=>({...i,stage:STAGES.includes(i.stage)?i.stage:inferStage(i)}))};
 }
+// Ревизия 13. Предварительная полная новая проводка от щита у входа,
+// трассы по потолку с вертикальными спусками. Позже заменим данными SketchUp.
+// Центральные значения ранее обсуждавшихся диапазонов, не заказные метражи.
+const CEILING_WIRE_ESTIMATES={
+  'initial-1':{quantity:125,range:'100–150 м',use:'Освещение',price:100},
+  'initial-2':{quantity:300,range:'250–350 м',use:'Розеточные линии',price:132},
+  'initial-3':{quantity:20,range:'15–25 м',use:'Отдельная линия к духовке — при необходимости после проверки мощности и схемы',price:230},
+  'initial-4':{quantity:20,range:'15–25 м',use:'Отдельная линия к варочной — при необходимости после проверки мощности и схемы',price:300},
+  'initial-13':{quantity:75,range:'50–100 м',use:'Интернет Cat.6',price:80}
+};
+function withCeilingWiringEstimates(data){
+  if(data.catalogRevision>=13)return data;
+  const baseline=new Map(baseInitial().items.map(i=>[i.id,i]));
+  const items=data.items.map(i=>{
+    const plan=CEILING_WIRE_ESTIMATES[i.id];
+    if(!plan)return i;
+    const original=baseline.get(i.id);
+    // Никогда не перезаписываем самостоятельно введённый метраж;
+    // купленную проводку тоже нельзя переоценивать автоматически.
+    const shouldFill=i.quantity===null&&i.status!=='Куплено';
+    const changes={};
+    if(shouldFill){
+      changes.quantity=plan.quantity;
+      changes.quantityApprox=true;
+    }
+    // Только исходную цену 3×2,5 уточняем по выбранной бухте:
+    // Ozon ЭРА, 50 м за 6 597 ₽ => ≈132 ₽/м.
+    if(i.id==='initial-2'&&i.price===original.price)changes.price=plan.price;
+    if(i.spec===original.spec){
+      changes.spec=plan.use+'. Предварительно '+plan.range+', для бюджета '+plan.quantity+' м. Раскладка: щит у входа, трассы по потолку, спуски к точкам; считаем электрику заново, не вычитаем проводку застройщика. Метраж уточнить в SketchUp. '+
+        (i.id==='initial-2'?'Цена ≈132 ₽/м по скриншоту Ozon: ЭРА 3×2,5, бухта 50 м / 6597 ₽. ': 'Цена за метр предварительная. ')+
+        'Тип кабеля и сечение окончательно уточнить по нагрузкам и проекту.';
+    }
+    return Object.keys(changes).length?{...i,...changes}:i;
+  });
+  return {...data,catalogRevision:13,items};
+}
 function initial(){
-  return withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior())))));
+  return withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(cleanupUnselectedCatalog(correctBathroomNumbers(initialPrior()))))));
 }
 function mergeCatalog(data){
   const base=data.catalogRevision>=9?data:includeDisc(cleanupUnselectedCatalog(correctBathroomNumbers(mergeCatalogPrior(data))));
-  return withStages(addConfirmedMarkingItems(removePrematureDisc(base)));
+  return withCeilingWiringEstimates(withStages(addConfirmedMarkingItems(removePrematureDisc(base))));
 }
 
 function amount(i){
