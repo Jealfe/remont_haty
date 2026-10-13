@@ -201,7 +201,20 @@ function reviseKasliWidth(data){
   });
   return {...data,catalogRevision:5,items};
 }
-function initial(){return reviseKasliWidth(questionnaireRevision(initialRev3()));}
+
+function markWallpaperCombination(data){
+  if(data.catalogRevision>=6)return data;
+  const expected={
+    'questionnaire-20261013-bed-wall-38209':'1,06×10 м; один из двух артикулов спальни. Количество после замеров; 1 290 ₽/рулон по опроснику.',
+    'questionnaire-20261013-bed-wall-38109':'Второй артикул спальни, предположительно 1,06×10 м. Цена 1 290 ₽ указана общей строкой для двух рисунков — уточнить для этого артикула.'
+  };
+  const note=' Обои двух артикулов будут сочетаться в одной спальне; при предполагаемой высоте 2,7 м ориентир около 6 рулонов СУММАРНО на спальню. Количество каждого артикула зависит от выбранной стены и точных размеров.';
+  return {...data,catalogRevision:6,items:data.items.map(i=>
+    Object.hasOwn(expected,i.id)&&i.spec===expected[i.id]?{...i,spec:i.spec+note}:i
+  )};
+}
+function initial(){return markWallpaperCombination(reviseKasliWidth(questionnaireRevision(initialRev3())));}
+
 
 
 function parseNum(value){
@@ -234,9 +247,10 @@ function validate(data){
   return {version:1,catalogRevision:Number.isInteger(data.catalogRevision)?data.catalogRevision:0,updatedAt:new Date().toISOString(),items};
 }
 function mergeCatalog(data){
-  if(data.catalogRevision>=5)return data;
-  if(data.catalogRevision===4)return reviseKasliWidth(data);
-  if(data.catalogRevision===3)return reviseKasliWidth(questionnaireRevision(data));
+  if(data.catalogRevision>=6)return data;
+  if(data.catalogRevision===5)return markWallpaperCombination(data);
+  if(data.catalogRevision===4)return markWallpaperCombination(reviseKasliWidth(data));
+  if(data.catalogRevision===3)return markWallpaperCombination(reviseKasliWidth(questionnaireRevision(data)));
   const items=data.items.map(maybeUpdateColdWeld);
   const seenIds=new Set(items.map(i=>i.id));
   const seenNames=new Set(items.map(i=>[i.room,i.category,i.name].join('|').toLocaleLowerCase('ru')));
@@ -249,7 +263,7 @@ function mergeCatalog(data){
   };
   if(data.catalogRevision<2){baseInitial();addMissing(additions());}
   addMissing(toolAdditions());
-  return reviseKasliWidth(questionnaireRevision({...data,catalogRevision:3,items}));
+  return markWallpaperCombination(reviseKasliWidth(questionnaireRevision({...data,catalogRevision:3,items})));
 }
 function amount(i){
   return i.quantity===null||i.price===null?null:Math.round(i.quantity*i.price*100)/100;
