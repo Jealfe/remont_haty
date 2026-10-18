@@ -157,19 +157,50 @@ function main(){
     openings.append(item);
   }
   const heightMm=APARTMENT_DIMENSIONS.ceilingHeightMm;
-  const stripsPerRoll=Math.floor(10000/(heightMm+100)); // 100 мм на подрезку, только для предварительной оценки
-  const wallpaperIds=new Set(['bedroom','kitchen','child1','child2']);
-  const estimates=byId('wallpaper-rows');
-  for(const room of rooms.filter(r=>wallpaperIds.has(r.id))){
-    const lines=Math.ceil(perimeterMm(room)/1060);
-    const rolls=Math.ceil(lines/stripsPerRoll);
-    const tr=create('tr');
-    for(const value of [room.name,precision(perimeterMm(room)/1000)+' м',lines+' полос',rolls+' рул. (макс. грубо)']){
-      tr.append(create('td',value));
+  const rollWidthMm=1060,rollLengthMm=10000,trimMm=100;
+  const stripsPerRoll=Math.floor(rollLengthMm/(heightMm+trimMm));
+  // Ориентиры по ранее сохранённым артикулам; бюджет детских условный.
+  // Кладовая: рисунок и цена ещё не обсуждались, сумму не подставлять.
+  // Коридор: периметр Г-образной фигуры пока НЕ подтверждён.
+  const wallpaperPlans=[
+    {id:'bedroom',price:1290,priceState:'Сочетание двух артикулов, 6 рулонов суммарно'},
+    {id:'kitchen',price:2300,priceState:'9294-17, без подгонки по данным владельца'},
+    {id:'child1',price:1500,priceState:'Только бюджетный ориентир, обои не выбраны',provisional:true},
+    {id:'child2',price:1500,priceState:'Только бюджетный ориентир, обои не выбраны',provisional:true},
+    {id:'hall',price:2500,perimeterGuessMm:17920,priceState:'60977-04, периметр и число проёмов уточнить',perimeterProvisional:true},
+    {id:'storage',price:null,priceState:'Обои и цена не выбраны'}
+  ];
+  const rub=n=>new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(n);
+  const estimateTable=byId('wallpaper-rows');
+  let totalRolls=0,pricedTotal=0,provisionalTotal=0;
+  for(const plan of wallpaperPlans){
+    const room=rooms.find(r=>r.id===plan.id);
+    const perimeter=plan.perimeterGuessMm||perimeterMm(room);
+    const stripes=Math.ceil(perimeter/rollWidthMm);
+    const rolls=Math.ceil(stripes/stripsPerRoll);
+    totalRolls+=rolls;
+    if(plan.price!==null){
+      if(plan.provisional)provisionalTotal+=rolls*plan.price;
+      else pricedTotal+=rolls*plan.price;
     }
-    estimates.append(tr);
+    const tr=create('tr');
+    const cells=[
+      room.name,
+      (plan.perimeterProvisional?'≈ ':'')+precision(perimeter/1000)+' м',
+      stripes+' полос',
+      rolls+' рул.',
+      plan.price===null?'Не выбраны':(plan.provisional?'≈ ':'')+rub(plan.price),
+      plan.price===null?'—':(plan.provisional?'≈ ':'')+rub(rolls*plan.price)
+    ];
+    for(let i=0;i<cells.length;i++){
+      const td=create('td',cells[i]);
+      if(i===0)td.title=plan.priceState;
+      tr.append(td);
+    }
+    estimateTable.append(tr);
   }
-  byId('wallpaper-rule').textContent='Ориентир: рулон 1,06×10 м, полоса '+precision((heightMm+100)/1000,2)+' м (высота + 10 см на подрезку), по '+stripsPerRoll+' полосы из рулона. Окна и двери пока не вычтены.';
+  byId('wallpaper-rule').textContent='Грубый расчёт на весь периметр: '+stripsPerRoll+' полных полосы из рулона '+precision(rollWidthMm/1000,2)+' × '+precision(rollLengthMm/1000,2)+' м, высота '+precision(heightMm/1000,2)+' м + 10 см на подрезку. ВСЕГО ≈'+totalRolls+' рулонов, включая 3 рулона кабинета без цены. Выбранные артикулы спальни, кухни и коридора: '+rub(pricedTotal)+'; детские по условной цене: ещё ≈'+rub(provisionalTotal)+'. Для предварительного сравнения: ≈'+rub(pricedTotal+provisionalTotal)+' без кабинета. В смету количество рулонов пока не перенесено.';
+
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',main);
 else main();
