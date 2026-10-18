@@ -30,9 +30,9 @@ function upgrade(d){
    }
  }
  items=items.map(x=>{
-   if(x.id==='panel-case'&&x.name===oldFrameName&&x.spec===oldFrameSpec&&x.quantity===1&&x.price===9500&&x.status==='Запланировано')
+   if(canReplace&&x.id==='panel-case'&&x.name===oldFrameName&&x.spec===oldFrameSpec&&x.quantity===1&&x.price===9500&&x.status==='Запланировано')
      return {...x,name:'Корпус квартирного щита 48 модулей',spec:'Предварительно однофазный щит: 20 одномодульных автоматов + 7 двухмодульных УЗО = 34 модуля, ориентировочно 4 модуля вводного аппарата и реле, запас около 10. Сохранён старый ценовой резерв 9 500 ₽, точная цена не выбрана; размеры и комплектация после проверки ввода.',status:'Уточнить'};
-   if(x.id==='panel-parts'&&x.spec===oldPartsSpec&&x.quantity===1&&x.price===5000&&x.status==='Запланировано')
+   if(canReplace&&x.id==='panel-parts'&&x.spec===oldPartsSpec&&x.quantity===1&&x.price===5000&&x.status==='Запланировано')
      return {...x,spec:'Предварительный набор шин N/PE, гребёнок, клемм и маркировки для 20 автоматов и 7 групповых УЗО. Раздельные N-группы; без работ электрика. Состав и цена пока ориентировочные.',status:'Уточнить'};
    return x;
  });
