@@ -199,7 +199,7 @@ function main(){
     }
     estimateTable.append(tr);
   }
-  byId('wallpaper-rule').textContent='Грубый расчёт на весь периметр: '+stripsPerRoll+' полных полосы из рулона '+precision(rollWidthMm/1000,2)+' × '+precision(rollLengthMm/1000,2)+' м, высота '+precision(heightMm/1000,2)+' м + 10 см на подрезку. ВСЕГО ≈'+totalRolls+' рулонов, включая 3 рулона кабинета без цены. Выбранные артикулы спальни, кухни и коридора: '+rub(pricedTotal)+'; детские по условной цене: ещё ≈'+rub(provisionalTotal)+'. Для предварительного сравнения: ≈'+rub(pricedTotal+provisionalTotal)+' без кабинета. В смету количество рулонов пока не перенесено.';
+  byId('wallpaper-rule').textContent='Грубый расчёт на весь периметр: '+stripsPerRoll+' полных полосы из рулона '+precision(rollWidthMm/1000,2)+' × '+precision(rollLengthMm/1000,2)+' м, высота '+precision(heightMm/1000,2)+' м + 10 см на подрезку. ВСЕГО ≈'+totalRolls+' рулона, включая 3 рулона кабинета без цены. Выбранные артикулы спальни, кухни и коридора: '+rub(pricedTotal)+'; детские по условной цене: ещё ≈'+rub(provisionalTotal)+'. Для предварительного сравнения: ≈'+rub(pricedTotal+provisionalTotal)+' без кабинета. В смету количество рулонов пока не перенесено.';
 
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',main);
